@@ -143,6 +143,47 @@ describe("under-reporting detection (mixed changes must not be silent)", () => {
     expect(result.bodyUnderReported).toBe(false);
   });
 
+  it("does not flag added block elements (engine annotates the tag instead of wrapping)", () => {
+    const result = buildRedline(
+      doc("<ol><li>a</li></ol><table><tbody><tr><td>1</td></tr></tbody></table>"),
+      doc("<ol><li>a</li><li>b</li></ol><table><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>"),
+    );
+    expect(result.markerCount).toBeGreaterThan(0);
+    expect(result.bodyUnderReported).toBe(false);
+    // Document the two shapes this test exists for: the row is ANNOTATED in place, while the
+    // list item takes the tag-alignment-shift shape (tags matched as equal, only text wrapped,
+    // leaving a phantom empty <li> in the naive reconstruction).
+    const parsed = new DOMParser().parseFromString(result.html, "text/html");
+    expect(parsed.querySelector('tr[data-diff-node="ins"]')).not.toBeNull();
+    expect(parsed.querySelector("li ins.redline")).not.toBeNull();
+  });
+
+  it("does not flag removed block elements", () => {
+    const result = buildRedline(
+      doc("<ul><li>keep</li><li>drop me</li></ul>"),
+      doc("<ul><li>keep</li></ul>"),
+    );
+    expect(result.markerCount).toBeGreaterThan(0);
+    expect(result.bodyUnderReported).toBe(false);
+  });
+
+  it("ignores comment-only differences (the tokenizer drops comments anyway)", () => {
+    const result = buildRedline(doc("<!-- reviewer note --><p>same</p>"), doc("<p>same</p>"));
+    expect(result.markerCount).toBe(0);
+    expect(result.headDiffers).toBe(false);
+    expect(result.bodyUnderReported).toBe(false);
+  });
+
+  it("an unmarkable bare-void insertion (<hr>) surfaces via the zero-marker state, unflagged", () => {
+    // The engine emits the inserted <hr> with neither a wrapper nor an annotation. It is NOT
+    // flagged as under-reported (empty attribute-less elements are comparison noise — see
+    // normalizeForComparison), but with zero markers and differing inputs the viewer still
+    // reaches the "changed but unrepresentable" banner, so the change is never silent.
+    const result = buildRedline(doc("<p>x</p>"), doc("<p>x</p><hr>"));
+    expect(result.markerCount).toBe(0);
+    expect(result.bodyUnderReported).toBe(false);
+  });
+
   it("does not flag identical documents", () => {
     const same = doc('<p class="x">unchanged</p>', "<title>t</title>");
     const result = buildRedline(same, same);

@@ -54,17 +54,22 @@ export function clusterMarkers(markers: MarkerRect[], gap: number = BLOCK_GAP): 
   }));
 }
 
-/** Measure every redline marker in the frame's document, in document coordinates. */
+/**
+ * Measure every redline marker in the frame's document, in document coordinates. Markers come in
+ * two shapes (see diff.ts#reconstructSide): ins/del wrappers for inline content, and block
+ * elements annotated in place with `data-diff-node="ins|del"` (added/removed rows, list items).
+ */
 function measureMarkers(doc: Document): MarkerRect[] {
   // documentElement's rect.top is -scrollY, so subtracting it converts viewport to document
   // coordinates without touching the frame's scroll state.
   const docTop = doc.documentElement.getBoundingClientRect().top;
-  return [...doc.querySelectorAll("ins.redline, del.redline")].map((el) => {
+  return [...doc.querySelectorAll("ins.redline, del.redline, [data-diff-node]")].map((el) => {
+    const annotated = el.getAttribute("data-diff-node");
     const rect = el.getBoundingClientRect();
     return {
       top: rect.top - docTop,
       height: rect.height,
-      kind: el.tagName === "INS" ? "ins" : ("del" as MarkerKind),
+      kind: (annotated ?? (el.tagName === "INS" ? "ins" : "del")) === "ins" ? "ins" : ("del" as MarkerKind),
     };
   });
 }

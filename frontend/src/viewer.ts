@@ -132,10 +132,11 @@ export async function bootSession(session: string): Promise<void> {
     doc.write(redline.html);
     doc.close();
 
-    if (doc.querySelector("ins.redline, del.redline") === null) {
-      // The sides differ but the redline carries no markers: attribute-only or <head>-only
-      // changes (or an engine gap we haven't met). Showing the unmarked merge would falsely
-      // read as "no changes" — show the plain after side and say so.
+    if (doc.querySelector("ins.redline, del.redline, [data-diff-node]") === null) {
+      // The sides differ but the redline carries no markers — neither wrappers nor block-level
+      // annotations: attribute-only or <head>-only changes (or an engine gap we haven't met).
+      // Showing the unmarked merge would falsely read as "no changes" — show the plain after
+      // side and say so.
       frame.src = afterUrl;
       showBanner(
         "warning",

@@ -12,6 +12,7 @@ import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.IdeActions
+import com.intellij.openapi.actionSystem.Toggleable
 import com.intellij.openapi.application.runReadAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAwareAction
@@ -45,6 +46,21 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
     private var browser: JBCefBrowser? = null
     private var sessionId: String? = null
 
+    // Extracted once in init(); kept so Swap Sides can rebuild the session without re-reading
+    // the request (documents may have changed underneath by then).
+    private var beforeHtml = ""
+    private var afterHtml = ""
+    private var beforeDir: Path? = null
+    private var afterDir: Path? = null
+    private var dark = false
+
+    /**
+     * Redline-local side swap. Compare Files orders sides by project-tree position, which puts an
+     * alphabetically-earlier "after" file on the left — the redline then reads inverted. The text
+     * viewers own the request-level Swap Sides action; this one only re-renders the redline.
+     */
+    private var swapped = false
+
     /**
      * Change-block count last reported by the shell over the JS bridge (`"<count>,<current>"`).
      * Written on a CEF thread, read by the toolbar actions' `update()` — hence volatile.
@@ -63,14 +79,13 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
 
         // A missing side (EmptyContent in an added/deleted-file diff) becomes the empty string;
         // the shell recognizes it and renders the one-sided state.
-        val beforeHtml = before?.let { runReadAction { it.document.text } } ?: ""
-        val afterHtml = after?.let { runReadAction { it.document.text } } ?: ""
+        beforeHtml = before?.let { runReadAction { it.document.text } } ?: ""
+        afterHtml = after?.let { runReadAction { it.document.text } } ?: ""
+        beforeDir = before?.let(::assetBaseDir)
+        afterDir = after?.let(::assetBaseDir)
+        dark = !JBColor.isBright()
 
-        val id = RedlineWebResources.openSession(
-            beforeHtml = beforeHtml,
-            afterHtml = afterHtml,
-            baseDir = (after ?: before)?.let(::assetBaseDir),
-        )
+        val id = openCurrentSession()
         sessionId = id
 
         try {
@@ -81,7 +96,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
             newBrowser.jbCefClient.addRequestHandler(RedlineNavigationGuard(), newBrowser.cefBrowser)
 
             RedlineWebResources.registerSchemeHandler()
-            newBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark = !JBColor.isBright()))
+            newBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark))
 
             panel.add(newBrowser.component, BorderLayout.CENTER)
         } catch (t: Throwable) {
@@ -106,8 +121,21 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
                 icon = AllIcons.Actions.NextOccurence,
                 shortcutActionId = IdeActions.ACTION_NEXT_DIFF,
             ),
+            SwapSidesAction(),
         )
         return components
+    }
+
+    /**
+     * (Re)open the session for the current [swapped] state. The v1 assets cheat serves the
+     * CURRENT after side's directory, falling back to the other side (VCS revisions and empty
+     * sides aren't file-backed).
+     */
+    private fun openCurrentSession(): String {
+        val b = if (swapped) afterHtml else beforeHtml
+        val a = if (swapped) beforeHtml else afterHtml
+        val dir = if (swapped) beforeDir ?: afterDir else afterDir ?: beforeDir
+        return RedlineWebResources.openSession(beforeHtml = b, afterHtml = a, baseDir = dir)
     }
 
     /**
@@ -174,6 +202,32 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
         override fun actionPerformed(e: AnActionEvent) {
             val cef = browser?.cefBrowser ?: return
             cef.executeJavaScript("window.__redlineNav && window.__redlineNav('$direction');", cef.url, 0)
+        }
+    }
+
+    /**
+     * Swaps which side the redline treats as the original, Redline-locally: the session is
+     * rebuilt with the sides exchanged and the shell reloaded. Presented as a toggle so an
+     * active swap is visible in the toolbar.
+     */
+    private inner class SwapSidesAction :
+        DumbAwareAction("Swap Sides", "Treat the other side as the original", AllIcons.Actions.SwapPanels) {
+
+        override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.BGT
+
+        override fun update(e: AnActionEvent) {
+            e.presentation.isEnabled = browser != null
+            Toggleable.setSelected(e.presentation, swapped)
+        }
+
+        override fun actionPerformed(e: AnActionEvent) {
+            val currentBrowser = browser ?: return
+            swapped = !swapped
+            changeCount = 0 // disable nav until the reloaded shell reports its blocks
+            sessionId?.let(RedlineWebResources::closeSession)
+            val id = openCurrentSession()
+            sessionId = id
+            currentBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark))
         }
     }
 

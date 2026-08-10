@@ -26,7 +26,7 @@ const ATOMIC_TAGS = "iframe,object,math,svg,script,video,style";
  * into them — light-on-light. Elements inside a marker with their own color rules keep them.
  */
 const REDLINE_CSS = `
-  ins.redline, del.redline {
+  ins.redline, del.redline, [data-diff-node] {
     visibility: visible !important;
     opacity: 1 !important;
     content-visibility: visible !important;
@@ -35,6 +35,11 @@ const REDLINE_CSS = `
   del.redline { background: #f8d7d7 !important; color: #1a1a1a !important; text-decoration: line-through !important; outline: 1px solid #d98c8c !important; }
   ins.redline img { outline: 3px solid #7ac47a !important; }
   del.redline img { outline: 3px solid #d98c8c !important; }
+  /* Block elements the engine marks by annotating the tag itself (no ins/del wrapper) — see
+     reconstructSide. Their text content is usually wrapped too; the dashed outline marks the
+     structural change (and is the ONLY marking for annotation-only changes, e.g. empty blocks). */
+  [data-diff-node="ins"] { outline: 1px dashed #7ac47a !important; }
+  [data-diff-node="del"] { outline: 1px dashed #d98c8c !important; }
 `;
 
 /**
@@ -52,7 +57,11 @@ export const DOC_CSP =
 export interface RedlineResult {
   /** The merged redline document. */
   html: string;
-  /** Number of ins/del markers in the merged body. */
+  /**
+   * Number of change markers in the merged body: ins/del wrappers plus block elements the engine
+   * annotates in place (`data-diff-node`) instead of wrapping — an added table row or list item
+   * is an annotated element whose text is wrapped; an added empty block is annotation-only.
+   */
   markerCount: number;
   /** The two heads differ; head changes are invisible by design (after head is kept). */
   headDiffers: boolean;
@@ -93,8 +102,10 @@ export function buildRedline(beforeHtml: string, afterHtml: string, baseHref?: s
   const redlineBody = htmldiff(beforeBody, after.body.innerHTML, "redline", null, ATOMIC_TAGS);
 
   after.body.innerHTML = redlineBody;
-  const markerCount = after.body.querySelectorAll("ins.redline, del.redline").length;
-  const bodyUnderReported = normalizeForComparison(reconstructSide(after.body, "before")) !== normalizeForComparison(beforeBody);
+  const markerCount = after.body.querySelectorAll("ins.redline, del.redline, [data-diff-node]").length;
+  const bodyUnderReported =
+    normalizeForComparison(reconstructSide(after.body, "before"), before) !==
+    normalizeForComparison(beforeBody, before);
 
   // Head additions, in order: CSP first (governs everything after it), then base, then our CSS.
   const csp = after.createElement("meta");
@@ -126,19 +137,52 @@ export function diffHtml(beforeHtml: string, afterHtml: string, baseHref?: strin
 /**
  * Rebuild one side's body markup from the merged redline: the before side is everything except
  * insertions (drop `ins`, unwrap `del`); the after side is the mirror image. If the rebuilt
- * before side differs from the real one, the redline under-reports (attribute-only changes).
+ * before side differs from the real one, the redline under-reports (attribute-only changes,
+ * or structural changes the engine failed to mark at all, e.g. an added `<hr>`).
+ *
+ * The engine emits changes in TWO shapes, both handled here: inline content is wrapped in
+ * `<ins>`/`<del>` elements, but block elements are ANNOTATED in place (`data-diff-node="ins|del"`
+ * + `data-operation-index`, no wrapper) — an added `<li>` is an annotated li whose text carries
+ * the wrapper. Annotations of the dropped side are removed with their element; annotations of the
+ * kept side revert to the plain tag by stripping the marker attributes.
  */
 function reconstructSide(mergedBody: Element, side: "before" | "after"): string {
+  const [dropped, kept] = side === "before" ? (["ins", "del"] as const) : (["del", "ins"] as const);
   const clone = mergedBody.cloneNode(true) as Element;
-  clone.querySelectorAll(side === "before" ? "ins.redline" : "del.redline").forEach((node) => node.remove());
-  clone.querySelectorAll(side === "before" ? "del.redline" : "ins.redline").forEach((node) => node.replaceWith(...node.childNodes));
+  clone.querySelectorAll(`${dropped}.redline, [data-diff-node="${dropped}"]`).forEach((node) => node.remove());
+  clone.querySelectorAll(`${kept}.redline`).forEach((node) => node.replaceWith(...node.childNodes));
+  clone.querySelectorAll(`[data-diff-node="${kept}"]`).forEach((node) => {
+    node.removeAttribute("data-diff-node");
+    node.removeAttribute("data-operation-index");
+  });
   return clone.innerHTML;
 }
 
-/** Whitespace-insensitive comparison: tokenization may rearrange runs, and whitespace-only
- * differences are invisible in rendered HTML anyway. */
-function normalizeForComparison(html: string): string {
-  return html.replace(/\s+/g, " ").trim();
+/**
+ * Canonicalize markup for the under-reporting comparison. Two artifact classes of the token diff
+ * must not masquerade as hidden changes:
+ *
+ * - Whitespace runs — tokenization may rearrange them, and they are invisible when rendered.
+ * - Phantom EMPTY elements — a tag-alignment shift can match an added element's tags as "equal"
+ *   and wrap only its text (`<li><ins>b</ins></li>`), leaving an attribute-less, content-less
+ *   element behind in the reconstruction. Elements like that carry no reviewable information, so
+ *   they are dropped from BOTH sides. (Cost: a bare void-element insertion such as `<hr>` is not
+ *   flagged — it still renders in the redline, just unhighlighted, and an hr-only change still
+ *   surfaces via the zero-marker "unrepresentable" state.)
+ */
+function normalizeForComparison(html: string, scratch: Document): string {
+  const container = scratch.createElement("div");
+  container.innerHTML = html;
+  const elements = [...container.querySelectorAll("*")];
+  // Reverse document order visits descendants before ancestors, so removals cascade upward
+  // (emptying a <li> can empty its <ul>).
+  for (let i = elements.length - 1; i >= 0; i--) {
+    const el = elements[i];
+    if (el.attributes.length === 0 && el.children.length === 0 && (el.textContent ?? "").trim() === "") {
+      el.remove();
+    }
+  }
+  return container.innerHTML.replace(/\s+/g, " ").trim();
 }
 
 /**
@@ -159,4 +203,14 @@ export function sanitizeReviewedDocument(doc: Document): void {
       if (attr.name.toLowerCase().startsWith("on")) el.removeAttribute(attr.name);
     }
   });
+  // The engine's tokenizer silently drops HTML comments; strip them from both sides up front so
+  // a comment difference (invisible when rendered anyway) can't skew the under-reporting check.
+  stripComments(doc);
+}
+
+function stripComments(node: Node): void {
+  for (const child of [...node.childNodes]) {
+    if (child.nodeType === Node.COMMENT_NODE) child.remove();
+    else stripComments(child);
+  }
 }
