@@ -1,0 +1,61 @@
+# IntelliJ project files
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Gradle
+.gradle/
+build/
+!gradle-wrapper.jar
+.gradletasknamecache
+
+# IntelliJ plugin development
+.sandbox/
+.intellijPlatform/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Logs
+*.log
+
+# Local configuration
+local.properties
+
+# Compiled files
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Generated / cache
+bin/
+gen/
+.cache/
+.kotlin/
+
+# Frontend (Vite)
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+# Playwright e2e artifacts (pnpm run test:e2e)
+frontend/test-results/
+frontend/playwright-report/
+.pnpm-store/
+# Built viewer bundle is generated into resources by the frontend build:
+src/main/resources/web/
+
+# Local-only corpus slot: real customer documents may be placed here for manual testing and
+# must never be committed. The committed synthetic corpus lives in testdata/mock/.
+testdata/tie/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+tmp/
+temp/

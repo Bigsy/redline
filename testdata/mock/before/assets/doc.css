@@ -1,0 +1,100 @@
+/* Synthetic document styling for the Redline mock corpus — no real customer content.
+   Mirrors the shape of a typical branded integration guide: header with logo, boxed TOC,
+   striped tables, callouts. */
+
+:root {
+  --brand: #1f6f5c;
+  --brand-dark: #14493d;
+  --ink: #1d2430;
+  --muted: #5c6672;
+  --paper: #ffffff;
+  --tint: #f2f7f5;
+  --rule: #d7dee4;
+}
+
+body {
+  font: 16px/1.6 Georgia, "Times New Roman", serif;
+  color: var(--ink);
+  background: var(--paper);
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+h1, h2, h3 {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: var(--brand-dark);
+  line-height: 1.25;
+}
+
+h1 { font-size: 1.7rem; margin: 0; }
+h2 { font-size: 1.25rem; margin-top: 2.2rem; border-bottom: 2px solid var(--brand); padding-bottom: 0.25rem; }
+h3 { font-size: 1.05rem; margin-top: 1.4rem; }
+
+.doc-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  border-bottom: 3px solid var(--brand);
+  padding-bottom: 1.25rem;
+}
+
+.doc-header .logo { width: 72px; height: 72px; }
+
+.meta { color: var(--muted); font-size: 0.9rem; margin: 0.3rem 0 0; }
+
+nav.toc {
+  background: var(--tint);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+}
+
+nav.toc h2 { margin: 0 0 0.5rem; border: none; font-size: 1rem; }
+nav.toc ol { margin: 0; padding-left: 1.4rem; }
+nav.toc li { margin: 0.15rem 0; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  font-size: 0.9rem;
+}
+
+th, td {
+  border: 1px solid var(--rule);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+thead th { background: var(--brand); color: #fff; }
+tbody tr:nth-child(even) { background: var(--tint); }
+
+code {
+  font: 0.85em/1.4 "SF Mono", Menlo, Consolas, monospace;
+  background: var(--tint);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0 0.25em;
+}
+
+.callout {
+  border-left: 4px solid var(--brand);
+  background: var(--tint);
+  padding: 0.75rem 1rem;
+  margin: 1rem 0;
+  border-radius: 0 6px 6px 0;
+}
+
+.callout.warning { border-left-color: #b07908; background: #fdf6e0; }
+
+footer {
+  margin-top: 3rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

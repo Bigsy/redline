@@ -1,0 +1,23 @@
+{
+  "name": "@redline/frontend",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.9.0",
+  "description": "Redline rendered-diff viewer bundle embedded in the Redline IntelliJ plugin via JCEF.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.62.1",
+    "happy-dom": "^20.11.2",
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0",
+    "vitest": "^3.2.7"
+  }
+}

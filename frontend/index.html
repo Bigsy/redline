@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Redline</title>
+    <style>
+      /* Shell chrome only — the reviewed document lives inside the sandboxed iframe and its CSS
+         cannot reach out here (nor ours in; the redline styles are injected into the iframe). */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      #app {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .redline-content {
+        position: relative;
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+      .redline-frame {
+        flex: 1;
+        width: 100%;
+        border: none;
+        /* Deliberately NOT themed: an HTML document's default canvas is white, and the redline
+           marker colors are calibrated for a light canvas. Fidelity beats matching the IDE. */
+        background: #fff;
+      }
+      /* Overview ruler: one tick per change block, plotted at blockTop/docHeight. */
+      .redline-minimap {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 14px;
+        background: rgba(0, 0, 0, 0.06);
+        border-left: 1px solid rgba(0, 0, 0, 0.12);
+      }
+      .redline-tick {
+        position: absolute;
+        left: 2px;
+        right: 2px;
+        min-height: 3px;
+        border-radius: 1px;
+        cursor: pointer;
+      }
+      .redline-tick.ins {
+        background: #7ac47a;
+      }
+      .redline-tick.del {
+        background: #d98c8c;
+      }
+      .redline-tick.mixed {
+        background: linear-gradient(to bottom, #7ac47a 50%, #d98c8c 50%);
+      }
+      .redline-tick.current {
+        outline: 2px solid #3574f0;
+      }
+      .redline-nav {
+        position: absolute;
+        top: 8px;
+        right: 22px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .redline-nav-button {
+        font: 12px system-ui, sans-serif;
+        width: 26px;
+        height: 26px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.92);
+        cursor: pointer;
+      }
+      .redline-nav-button:hover {
+        background: #e8f1fb;
+      }
+      .redline-banner {
+        font: 13px/1.5 system-ui, sans-serif;
+        padding: 6px 12px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+      }
+      .redline-banner.info {
+        background: #e8f1fb;
+        color: #1a3e63;
+      }
+      .redline-banner.warning {
+        background: #fdf2d0;
+        color: #5f4a0e;
+      }
+      .redline-error {
+        font: 13px/1.5 system-ui, sans-serif;
+        padding: 12px;
+        color: #a4262c;
+        white-space: pre-wrap;
+      }
+      /* Dark IDE theme — set via html[data-theme] from the viewer URL's theme parameter (the
+         Kotlin side reads the IDE LaF). Only the SHELL chrome is themed; the reviewed document's
+         canvas stays light (see .redline-frame). */
+      html[data-theme='dark'] body {
+        background: #2b2d30;
+      }
+      html[data-theme='dark'] .redline-minimap {
+        background: rgba(255, 255, 255, 0.08);
+        border-left-color: rgba(255, 255, 255, 0.16);
+      }
+      html[data-theme='dark'] .redline-tick.current {
+        outline-color: #6ea8ff;
+      }
+      html[data-theme='dark'] .redline-nav-button {
+        background: rgba(43, 45, 48, 0.92);
+        border-color: rgba(255, 255, 255, 0.28);
+        color: #dfe1e5;
+      }
+      html[data-theme='dark'] .redline-nav-button:hover {
+        background: #3d4045;
+      }
+      html[data-theme='dark'] .redline-banner {
+        border-bottom-color: rgba(255, 255, 255, 0.2);
+      }
+      html[data-theme='dark'] .redline-banner.info {
+        background: #263549;
+        color: #a8c7f0;
+      }
+      html[data-theme='dark'] .redline-banner.warning {
+        background: #453a12;
+        color: #f0d268;
+      }
+      html[data-theme='dark'] .redline-error {
+        color: #f28b82;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

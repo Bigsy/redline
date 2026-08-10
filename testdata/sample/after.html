@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Release Notes</title>
+  <style>
+    body { font: 16px/1.6 system-ui; max-width: 42em; margin: 3em auto; }
+    header { border-bottom: 2px solid #333; padding-bottom: 0.5em; }
+    table { border-collapse: collapse; width: 100%; }
+    td, th { border: 1px solid #ccc; padding: 0.4em 0.8em; text-align: left; }
+  </style>
+</head>
+<body>
+  <!-- Sandbox proof: none of the following may ever fire in the viewer. The iframe sandbox
+       (no allow-scripts) must kill them even though this file is served verbatim. -->
+  <script>alert("SANDBOX BREACH: inline script executed");</script>
+  <header><h1 onclick="alert('SANDBOX BREACH: onclick handler fired')">Release Notes</h1></header>
+  <p><a href="javascript:alert('SANDBOX BREACH: javascript: URL ran')">release archive</a></p>
+  <p>This release focuses on stability improvements and performance tuning across the ingestion pipeline. Most users should see significantly faster imports and fewer retries under sustained load.</p>
+  <h2>Changes</h2>
+  <ol>
+    <li>Faster bulk imports</li>
+    <li>New health check endpoint</li>
+    <li>Retry backoff tuning</li>
+    <li>Improved error messages</li>
+  </ol>
+  <h2>Compatibility</h2>
+  <table>
+    <thead><tr><th>Component</th><th>Minimum version</th></tr></thead>
+    <tbody>
+      <tr><td>Server</td><td>2.5</td></tr>
+      <tr><td>CLI</td><td>1.9</td></tr>
+      <tr><td>Agent</td><td>0.7</td></tr>
+    </tbody>
+  </table>
+</body>
+</html>

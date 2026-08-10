@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Examplecare Data Collection Guide</title>
+  <link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+  <header class="doc-header">
+    <img class="logo" src="assets/logo.svg" alt="Examplecare logo">
+    <div>
+      <h1>Data Collection Guide</h1>
+      <p class="meta">Version 1.1 &middot; February 2026 &middot; Examplecare Integration Exchange</p>
+    </div>
+  </header>
+
+  <main>
+    <section id="scope">
+      <h2>1. What is collected</h2>
+      <p>
+        Partner systems submit daily observation bundles covering enrolled participants.
+        A bundle contains readings, device metadata, and an optional clinician note.
+      </p>
+      <div class="callout">
+        Bundles are accepted for the previous 7 calendar days. Older readings are rejected
+        individually, not as a whole bundle.
+      </div>
+    </section>
+
+    <section id="steps">
+      <h2>2. Submission steps</h2>
+      <ol>
+        <li>Assemble the day's readings into a bundle per participant.</li>
+        <li>Validate the bundle against the published schema.</li>
+        <li>Submit the bundle to the collection endpoint.</li>
+        <li>Store the acknowledgement token with the bundle.</li>
+      </ol>
+    </section>
+
+    <section id="quality">
+      <h2>3. Quality rules</h2>
+      <p>
+        Readings without a device timestamp are quarantined for manual review. Duplicate
+        readings within a bundle are dropped silently and reported in the daily digest.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    Synthetic test document for the Redline plugin — fictional Examplecare brand, no real
+    customer content.
+  </footer>
+</body>
+</html>

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Examplecare Transaction Integration Guide</title>
+  <link rel="stylesheet" href="assets/doc.css">
+</head>
+<body>
+  <header class="doc-header">
+    <img class="logo" src="assets/logo.svg" alt="Examplecare logo">
+    <div>
+      <h1>Transaction Integration Guide</h1>
+      <p class="meta">Version 2.3 &middot; March 2026 &middot; Examplecare Integration Exchange</p>
+    </div>
+  </header>
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li>Overview</li>
+      <li>Authentication</li>
+      <li>Endpoints</li>
+      <li>Payload formats</li>
+      <li>Error handling</li>
+      <li>Changelog</li>
+    </ol>
+  </nav>
+
+  <main>
+    <section id="overview">
+      <h2>1. Overview</h2>
+      <p>
+        The Examplecare Integration Exchange accepts transaction submissions from partner
+        systems over HTTPS. Each submission is validated synchronously and queued for
+        settlement in the nightly batch run. Partners receive a signed acknowledgement for
+        every accepted transaction.
+      </p>
+      <div class="callout">
+        Submissions received after 21:00 UTC are settled in the following night's batch.
+      </div>
+    </section>
+
+    <section id="authentication">
+      <h2>2. Authentication</h2>
+      <p>
+        All requests carry an OAuth 2.0 bearer token obtained from the partner token service.
+        Tokens are valid for 30 minutes and must not be cached beyond their expiry.
+      </p>
+      <p>
+        Client credentials are issued per environment. Sandbox credentials never work against
+        production hosts.
+      </p>
+    </section>
+
+    <section id="endpoints">
+      <h2>3. Endpoints</h2>
+      <table>
+        <thead>
+          <tr><th>Endpoint</th><th>Method</th><th>Purpose</th><th>Notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/v2/transactions</code></td>
+            <td>POST</td>
+            <td>Submit a transaction batch</td>
+            <td>Maximum 100 transactions per batch</td>
+          </tr>
+          <tr>
+            <td><code>/v2/transactions/{id}</code></td>
+            <td>GET</td>
+            <td>Fetch a single transaction</td>
+            <td>Available for 90 days after settlement</td>
+          </tr>
+          <tr>
+            <td><code>/v2/settlements/{date}</code></td>
+            <td>GET</td>
+            <td>Fetch a settlement report</td>
+            <td>Reports are published by 06:00 UTC</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="payloads">
+      <h2>4. Payload formats</h2>
+      <p>
+        Transaction batches are JSON documents. Every batch carries a partner reference, a
+        batch sequence number, and one or more transaction entries.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>partnerRef</code></td><td>string</td><td>yes</td><td>Stable identifier issued at onboarding</td></tr>
+          <tr><td><code>sequence</code></td><td>integer</td><td>yes</td><td>Monotonically increasing per partner</td></tr>
+          <tr><td><code>entries</code></td><td>array</td><td>yes</td><td>The transaction entries in submission order</td></tr>
+          <tr><td><code>checksum</code></td><td>string</td><td>no</td><td>Optional SHA-256 of the canonical entry list</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="errors">
+      <h2>5. Error handling</h2>
+      <p>Validation failures are reported synchronously with a machine-readable code.</p>
+      <table>
+        <thead>
+          <tr><th>Code</th><th>Meaning</th><th>Retry?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>EX-4001</code></td><td>Malformed batch document</td><td>No — correct and resubmit</td></tr>
+          <tr><td><code>EX-4009</code></td><td>Duplicate sequence number</td><td>No — the earlier batch stands</td></tr>
+          <tr><td><code>EX-5030</code></td><td>Settlement queue unavailable</td><td>Yes — retry with backoff</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="changelog">
+      <h2>6. Changelog</h2>
+      <ul>
+        <li><strong>2.3</strong> — Added the optional <code>checksum</code> field.</li>
+        <li><strong>2.2</strong> — Settlement reports moved to 06:00 UTC.</li>
+        <li><strong>2.1</strong> — Initial v2 release.</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    Synthetic test document for the Redline plugin — fictional Examplecare brand, no real
+    customer content.
+  </footer>
+</body>
+</html>

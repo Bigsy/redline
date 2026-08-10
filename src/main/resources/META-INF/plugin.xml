@@ -1,0 +1,38 @@
+<idea-plugin>
+    <id>com.hedworth.redline</id>
+    <name>Redline — Rendered HTML Diff</name>
+    <vendor url="https://github.com/Bigsy/redline">Bill Hedworth</vendor>
+
+    <description><![CDATA[
+    Review HTML changes as a rendered document, not markup. When both sides of a diff are HTML,
+    Redline adds a viewer that shows the page as the browser renders it, with insertions and
+    deletions highlighted inline — legal-document style.
+    <br/><br/>
+    Prose edits in long hand-authored lines, renumbered lists, and table changes become readable
+    at a glance instead of a wall of rewrapped markup. Works anywhere the IDE shows a diff: local
+    changes, commits, and VCS revisions.
+    <br/><br/>
+    Select the <b>Redline</b> viewer in the diff editor's view switcher, next to Side-by-side and
+    Unified.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <!-- Since 2026.2 (262) the JCEF classes live in the separate bundled "Web Browser (JCEF)"
+         plugin; without this dependency the Redline classloader can't see JBCefApp there. The alias
+         only exists from 2025.3.1, so it must stay optional to keep loading on 2024.1+, where JCEF
+         is part of the core platform. -->
+    <depends optional="true" config-file="redline-jcef.xml">com.intellij.modules.jcef</depends>
+
+    <change-notes><![CDATA[
+    <b>0.1.0</b>
+    <ul>
+        <li>Walking skeleton: Redline viewer registered in the diff editor for HTML files.</li>
+    </ul>
+    ]]></change-notes>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Appears in the diff viewer switcher when canShow matches (both sides HTML + JCEF
+             available) — the same mechanism as the built-in image diff. -->
+        <diff.DiffTool implementation="com.hedworth.redline.diff.RedlineDiffTool"/>
+    </extensions>
+</idea-plugin>
