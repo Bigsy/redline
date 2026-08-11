@@ -3,6 +3,8 @@
 [![build](https://github.com/Bigsy/redline/actions/workflows/build.yml/badge.svg)](https://github.com/Bigsy/redline/actions/workflows/build.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
+https://plugins.jetbrains.com/plugin/33487-redline--rendered-html-diff
+
 Review HTML changes as a **rendered document**, not markup. When both sides of a diff are
 HTML, Redline adds a viewer that shows the page as the browser renders it, with insertions
 and deletions highlighted inline — the way legal and publishing workflows mark up drafts.
