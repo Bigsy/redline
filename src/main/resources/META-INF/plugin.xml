@@ -24,9 +24,16 @@
     <depends optional="true" config-file="redline-jcef.xml">com.intellij.modules.jcef</depends>
 
     <change-notes><![CDATA[
-    <b>0.1.0</b>
+    <b>0.1.0 — initial release</b>
     <ul>
-        <li>Walking skeleton: Redline viewer registered in the diff editor for HTML files.</li>
+        <li><b>Redline viewer</b> in the diff editor's view switcher whenever both sides are HTML:
+            one rendered document with deletions struck through and insertions highlighted inline.</li>
+        <li>Works anywhere the IDE shows a diff — Compare Files, Local Changes, commits, and
+            VCS revision history.</li>
+        <li>Previous/next change navigation and a minimap strip marking every change block.</li>
+        <li><b>Swap Sides</b> action to flip which revision counts as "before".</li>
+        <li>Reviewed documents are rendered sandboxed: scripts never execute and external
+            requests are blocked, so diffing a document can't phone home.</li>
     </ul>
     ]]></change-notes>
 
