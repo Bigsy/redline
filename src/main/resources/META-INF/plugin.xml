@@ -1,6 +1,8 @@
 <idea-plugin>
     <id>com.hedworth.redline</id>
-    <name>Redline — Rendered HTML Diff</name>
+    <!-- Marketplace restricts plugin names to letters, digits, spaces and .,+_-/:()#'&[]| — an
+         em dash here fails verifyPlugin with "contains invalid characters". Keep the ASCII hyphen. -->
+    <name>Redline - Rendered HTML Diff</name>
     <vendor url="https://github.com/Bigsy/redline">Bill Hedworth</vendor>
 
     <description><![CDATA[

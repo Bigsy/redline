@@ -13,9 +13,10 @@ import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.actionSystem.Toggleable
-import com.intellij.openapi.application.runReadAction
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAwareAction
+import com.intellij.openapi.util.Computable
 import com.intellij.openapi.util.Disposer
 import com.intellij.ui.JBColor
 import com.intellij.ui.jcef.JBCefBrowser
@@ -79,8 +80,14 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
 
         // A missing side (EmptyContent in an added/deleted-file diff) becomes the empty string;
         // the shell recognizes it and renders the one-sided state.
-        beforeHtml = before?.let { runReadAction { it.document.text } } ?: ""
-        afterHtml = after?.let { runReadAction { it.document.text } } ?: ""
+        //
+        // Application.runReadAction, not the `runReadAction {}` Kotlin extension or
+        // ReadAction.compute: both of those are deprecated from 2026.1, and the replacement the
+        // platform points at there (ReadAction.computeBlocking) does not exist on the 2024.1
+        // baseline. This overload is present in 2024.1 and undeprecated in 2026.2.
+        val app = ApplicationManager.getApplication()
+        beforeHtml = before?.let { c -> app.runReadAction(Computable { c.document.text }) } ?: ""
+        afterHtml = after?.let { c -> app.runReadAction(Computable { c.document.text }) } ?: ""
         beforeDir = before?.let(::assetBaseDir)
         afterDir = after?.let(::assetBaseDir)
         dark = !JBColor.isBright()

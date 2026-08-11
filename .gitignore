@@ -53,6 +53,15 @@ src/main/resources/web/
 # must never be committed. The committed synthetic corpus lives in testdata/mock/.
 testdata/tie/
 
+# Local agent/working notes. These are personal scratch documents, not project docs — listed
+# here (not only in a personal global ignore) so a fresh clone or CI checkout can't commit them.
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+PLAN.md
+.claude/
+.cursor/
+
 # Temporary files
 *.tmp
 *.bak

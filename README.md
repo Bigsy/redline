@@ -1,5 +1,8 @@
 # Redline — Rendered HTML Diff for IntelliJ
 
+[![build](https://github.com/Bigsy/redline/actions/workflows/build.yml/badge.svg)](https://github.com/Bigsy/redline/actions/workflows/build.yml)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Review HTML changes as a **rendered document**, not markup. When both sides of a diff are
 HTML, Redline adds a viewer that shows the page as the browser renders it, with insertions
 and deletions highlighted inline — the way legal and publishing workflows mark up drafts.
@@ -66,6 +69,8 @@ pnpm run test            # viewer unit tests (happy-dom)
 pnpm exec playwright install chromium
 pnpm run test:e2e        # sandbox-enforcement proofs in real Chromium
 ```
+
+Release history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
