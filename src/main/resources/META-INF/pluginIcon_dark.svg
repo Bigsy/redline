@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+  <!-- Dark-theme variant: same geometry as pluginIcon.svg with strokes lifted for dark UI. -->
+  <path d="M7 10h26" stroke="#AFB1B3" stroke-width="4" stroke-linecap="round"/>
+  <path d="M7 20h15" stroke="#DB5C5C" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+  <path d="M5.5 20h18.5" stroke="#E55765" stroke-width="2" stroke-linecap="round"/>
+  <path d="M27 20h6" stroke="#59A869" stroke-width="4" stroke-linecap="round"/>
+  <path d="M7 30h26" stroke="#AFB1B3" stroke-width="4" stroke-linecap="round"/>
+</svg>

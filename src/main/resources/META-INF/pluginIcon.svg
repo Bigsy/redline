@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
-  <rect width="40" height="40" rx="8" fill="#1F2328"/>
-  <path d="M9 12h22" stroke="#9BA0A6" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M9 20h14" stroke="#9BA0A6" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M9 20h14" stroke="#E5534B" stroke-width="1.6" stroke-linecap="round" transform="translate(0 0.2)"/>
-  <path d="M27 20h4" stroke="#57AB5A" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M9 28h22" stroke="#9BA0A6" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- Light-theme plugin icon: a document line deleted (red strikethrough) and one added
+       (green), transparent background per JetBrains guidelines. -->
+  <path d="M7 10h26" stroke="#6E6E6E" stroke-width="4" stroke-linecap="round"/>
+  <path d="M7 20h15" stroke="#DB5C5C" stroke-width="4" stroke-linecap="round" opacity="0.4"/>
+  <path d="M5.5 20h18.5" stroke="#DB5C5C" stroke-width="2" stroke-linecap="round"/>
+  <path d="M27 20h6" stroke="#59A869" stroke-width="4" stroke-linecap="round"/>
+  <path d="M7 30h26" stroke="#6E6E6E" stroke-width="4" stroke-linecap="round"/>
 </svg>
