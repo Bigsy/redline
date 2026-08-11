@@ -1,21 +1,72 @@
-# Redline — Rendered HTML Diff
+# Redline — Rendered HTML Diff for IntelliJ
 
-An IntelliJ Platform plugin that shows HTML diffs as a **rendered redline**: one merged document
-with insertions and deletions highlighted inline, the way legal and publishing workflows mark up
-drafts — instead of a wall of rewrapped markup in a text diff.
+Review HTML changes as a **rendered document**, not markup. When both sides of a diff are
+HTML, Redline adds a viewer that shows the page as the browser renders it, with insertions
+and deletions highlighted inline — the way legal and publishing workflows mark up drafts.
 
-When both sides of a diff are HTML, a **Redline** option appears in the diff editor's viewer
-switcher (next to Side-by-side and Unified), rendering the document in a JCEF pane.
+![A text diff of an HTML change next to the same change rendered by Redline](assets/marketplace/01-comparison-hero.png)
 
-Status: walking skeleton. See [PLAN.md](PLAN.md) for the roadmap.
+Prose edits buried in long hand-authored lines, renumbered lists, and table changes become
+readable at a glance instead of a wall of rewrapped markup.
 
-## Building
+## Features
+
+- **Inline redline rendering** — one merged document with `ins`/`del` styling: deletions
+  struck through in red, insertions highlighted in green, in the document's own layout.
+- **Works anywhere the IDE shows a diff** — Compare Files, Local Changes, commits, and
+  VCS revision history. Select **Redline** in the diff editor's viewer switcher, next to
+  Side-by-side and Unified.
+- **Change navigation** — previous/next change actions in the toolbar plus a minimap strip
+  that marks every change block in the document.
+- **Swap Sides** — flip which revision counts as "before" without leaving the viewer.
+- **Untrusted-by-design rendering** — reviewed documents run in a sandboxed JCEF pane:
+  scripts never execute, external subresources are blocked by a strict CSP, `meta refresh`
+  is stripped, and `javascript:` links are dead. Diffing a document can't phone home.
+
+## Installation
+
+Requires an IntelliJ Platform IDE **2024.1 or newer** with JCEF available (bundled in all
+JetBrains IDEs; on 2026.2+ it lives in the bundled *Web Browser (JCEF)* plugin, which
+Redline picks up automatically).
+
+Until the Marketplace listing is live, install from a local build:
 
 ```
-./gradlew buildPlugin    # full plugin zip (builds the frontend via pnpm first)
+./gradlew buildPlugin
+```
+
+then **Settings → Plugins → ⚙ → Install Plugin from Disk…** and pick the zip from
+`build/distributions/`.
+
+## Try it
+
+```
+./gradlew runIde --args="diff testdata/demo/before.html testdata/demo/after.html"
+```
+
+opens the sandbox IDE directly on a contract-style demo diff in the Redline viewer.
+
+## How it works
+
+Redline registers a `FrameDiffTool` that appears in the diff viewer switcher when both
+sides of the request are HTML and JCEF is available. The Kotlin side serves the viewer
+shell and both documents over a custom scheme handler; the shell (a Vite + TypeScript app
+in `frontend/`, bundled into `src/main/resources/web/` at build time) computes the merged
+redline with [node-htmldiff](https://www.npmjs.com/package/node-htmldiff) (MIT) and renders
+it into a sandboxed iframe.
+
+## Development
+
+```
+./gradlew check          # Kotlin/platform tests (builds and tests the frontend first)
 ./gradlew runIde         # sandbox IDE for manual testing
+
+cd frontend
+pnpm run test            # viewer unit tests (happy-dom)
+pnpm exec playwright install chromium
+pnpm run test:e2e        # sandbox-enforcement proofs in real Chromium
 ```
 
-The viewer frontend is a Vite + TypeScript app in `frontend/`, bundled into
-`src/main/resources/web/` at build time. The diff engine is
-[node-htmldiff](https://www.npmjs.com/package/node-htmldiff) (MIT), running in the page.
+## License
+
+[MIT](LICENSE)
