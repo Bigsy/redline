@@ -8,7 +8,10 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": []
+    // Only Node's types, explicitly: corpus.test.ts reads testdata from disk via node:fs. Before
+    // Vite 8 / vitest 4 they arrived implicitly through vitest's type chain and an auto-installed
+    // peer @types/node; neither is true any more.
+    "types": ["node"]
   },
   "include": ["src"]
 }

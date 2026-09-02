@@ -1,2 +1,4 @@
-allowBuilds:
-  esbuild: true
+# pnpm 10+ refuses dependency lifecycle scripts unless listed here. Nothing needs one since Vite 8
+# (rolldown/oxc replaced esbuild); if `pnpm install` warns about ignored build scripts, add the
+# package here after checking what its script does.
+allowBuilds: {}
