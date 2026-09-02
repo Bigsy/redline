@@ -22,7 +22,15 @@ readable at a glance instead of a wall of rewrapped markup.
   VCS revision history. Select **Redline** in the diff editor's viewer switcher, next to
   Side-by-side and Unified.
 - **Change navigation** — previous/next change actions in the toolbar plus a minimap strip
-  that marks every change block in the document.
+  that marks every change block in the document, a "3 / 12" counter, and the current block
+  outlined where it sits in the page.
+- **Original / Redline / Final** — three views of the same merged document: the version you
+  started from, the marked-up comparison, or the version you would end with. Keys `1`/`2`/`3`.
+- **Find in document** — Cmd/Ctrl+F searches the rendered document, with match counts and
+  match-case. Matches are found across the redline's own markup, so a phrase you can read is
+  found even where an edit splits it in the HTML.
+- **Live refresh** — edit the file in the editor and the redline follows, without losing your
+  scroll position.
 - **Swap Sides** — flip which revision counts as "before" without leaving the viewer.
 - **Untrusted-by-design rendering** — reviewed documents run in a sandboxed JCEF pane:
   scripts never execute, external subresources are blocked by a strict CSP, `meta refresh`
@@ -68,6 +76,14 @@ it into a sandboxed iframe.
 The comparison itself runs in a Web Worker, so the pane stays responsive on large documents;
 if it outruns its 15-second budget (or the pair is over 2 MB) Redline shows the new version
 with a banner instead of freezing, and you can cancel a slow comparison while it runs.
+
+When a side of the diff is a live document, edits to it are pushed into the open session and the
+shell re-renders in place — no page reload, so your scroll position survives.
+
+Find is shell-side rather than JCEF's native find: matches are located by walking the document's
+text and painted with the CSS Custom Highlight API, which marks text without touching the DOM.
+That works wherever keyboard focus happens to be, and gives match counts, which the platform's
+JCEF build cannot.
 
 ## Development
 

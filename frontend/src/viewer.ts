@@ -5,7 +5,8 @@ import {
   DiffTimeoutError,
   type EngineOptions,
 } from "./diff";
-import { installMinimap } from "./minimap";
+import { installFindBar, type FindBar } from "./findbar";
+import { installMinimap, type MinimapController, type ViewMode } from "./minimap";
 
 /**
  * Contract with the Kotlin side (RedlineDiffViewer), all optional so the shell runs standalone:
@@ -16,12 +17,17 @@ import { installMinimap } from "./minimap";
  * - `__redlineFlush` is set by the shell and re-sends the latest state — Kotlin calls it right
  *   after injecting `__redlineReport`, closing the race where the shell reported before the
  *   bridge existed.
+ * - `__redlineReload` is set by the shell and re-renders in place from the session URLs. Kotlin
+ *   calls it after replacing the live session's content (the reviewed document was edited in the
+ *   IDE, or Swap Sides was pressed) instead of reloading the page, which would lose the reader's
+ *   scroll position and re-run the bridge-injection race.
  */
 declare global {
   interface Window {
     __redlineNav?: (direction: "next" | "prev") => void;
     __redlineReport?: (state: string) => void;
     __redlineFlush?: () => void;
+    __redlineReload?: () => void;
   }
 }
 
@@ -47,6 +53,36 @@ function reportNavState(blockCount: number, current: number): void {
   lastNavState = `${blockCount},${current}`;
   window.__redlineReport?.(lastNavState);
 }
+
+// Per-session state, shared between the first render and every live re-render. `generation`
+// invalidates a render that is still awaiting when the next one starts: its continuations must
+// not write banners into the new render's DOM (see `render`).
+let docBase = "";
+let bootOptions: BootOptions = {};
+let generation = 0;
+let currentFrame: HTMLIFrameElement | null = null;
+let minimap: MinimapController | null = null;
+// Session-scoped, unlike the minimap: the bar lives on document.body so a re-render cannot
+// replace it, and it keeps the reader's query across live refreshes.
+let findBar: FindBar | null = null;
+let engineRun: AbortController | null = null;
+
+/**
+ * Scroll offset a live reload wants restored, held here rather than read off the frame when the
+ * restore happens: `render()` swaps `currentFrame` for a fresh frame at the top of the document
+ * the instant it starts, so a reload arriving while the previous one is still fetching or diffing
+ * would read 0 and quietly send the reader to the top — precisely the continuous-typing case on a
+ * slow document that this batch exists for. Cleared only by the render that applies it.
+ */
+let pendingScrollTop: number | null = null;
+
+/**
+ * The reader's Original/Redline/Final choice. Session state, not render state: the minimap
+ * controller that owns the mode is disposed and rebuilt by every render, so without this a
+ * keystroke in the editor would snap the view back to Redline 400 ms later — undoing the "keep
+ * your place" that batch C is for.
+ */
+let viewMode: ViewMode = "redline";
 
 /**
  * Viewer shell logic — the only page ever loaded top-level in the JCEF pane. (Thin entry point
@@ -138,13 +174,83 @@ export type BootOptions = Pick<EngineOptions, "timeoutMs" | "execute">;
 export async function bootSession(session: string, options: BootOptions = {}): Promise<void> {
   // Absolute base: the redline is written into an about:blank frame, whose base URL is inherited
   // and murky — relative URLs must not depend on it.
-  const docBase = new URL(`/doc/${encodeURIComponent(session)}/`, window.location.href).href;
-  const afterUrl = `${docBase}after.html`;
+  docBase = new URL(`/doc/${encodeURIComponent(session)}/`, window.location.href).href;
+  bootOptions = options;
 
   // The bridge may be injected before or after the shell finishes booting; __redlineFlush lets
   // the Kotlin side pull the latest state either way. States without navigation report "0,-1".
-  lastNavState = "0,-1";
+  findBar ??= installFindBar();
   window.__redlineFlush = () => window.__redlineReport?.(lastNavState);
+  // Kotlin calls this after pushing new document text into the live session; the URLs are
+  // unchanged, so re-rendering means refetching and running the state machine again.
+  window.__redlineReload = () => {
+    void reload();
+  };
+
+  await render();
+}
+
+/**
+ * Re-render in place after the reviewed documents changed under us.
+ *
+ * The scroll offset is the only thing carried over: the minimap re-derives which change block is
+ * current from it (its scroll tracker fires on the restoring scroll), and the block that WAS
+ * current may not exist any more anyway.
+ */
+async function reload(): Promise<void> {
+  if (pendingScrollTop === null) pendingScrollTop = currentFrame?.contentWindow?.scrollY ?? 0;
+  const frame = await render();
+  // A later reload took over while this one was in flight; it owns the offset and the restore.
+  if (frame !== currentFrame) return;
+  const top = pendingScrollTop;
+  pendingScrollTop = null;
+  restoreScroll(frame, top);
+}
+
+/**
+ * Put the reader back where they were, clamped — the edit may have made the document shorter than
+ * the old offset.
+ *
+ * Applied twice, because the clamp needs a height it can trust. A written redline can be scrolled
+ * the instant `document.close()` returns, but its `<link>` stylesheets have not applied yet
+ * (measured in Chromium: 150 px immediately, 1848 px once the sheet landed) — clamping against
+ * the unstyled height would drop the reader near the top of a styled document. The frame's `load`
+ * fires with the settled height for both a written document's subresources and an `src`
+ * navigation, so: once now, for documents with nothing to wait for, and again when it settles.
+ */
+function restoreScroll(frame: HTMLIFrameElement, top: number): void {
+  if (top <= 0) return;
+  const apply = (): void => {
+    // A later render may own the pane by the time a slow stylesheet resolves.
+    if (frame !== currentFrame) return;
+    const win = frame.contentWindow;
+    const root = frame.contentDocument?.documentElement;
+    if (!win || !root) return;
+    win.scrollTo(0, Math.min(top, Math.max(root.scrollHeight - root.clientHeight, 0)));
+  };
+  apply();
+  frame.addEventListener("load", apply, { once: true });
+}
+
+/**
+ * Fetch both sides and run the truthfulness state machine into a fresh frame. Returns that frame
+ * so a live reload can restore the scroll offset once the state is settled.
+ *
+ * Everything the previous render left behind is torn down first — an engine run still in flight,
+ * the minimap's listeners on the SHELL window, the banners, the `__redlineNav` hook — and the
+ * nav state is reported as empty so the IDE toolbar disables until the new blocks are measured.
+ */
+async function render(): Promise<HTMLIFrameElement> {
+  const mine = ++generation;
+  /** True once a later render started: this one's awaits must stop writing to the shared DOM. */
+  const superseded = (): boolean => generation !== mine;
+
+  engineRun?.abort();
+  minimap?.dispose();
+  minimap = null;
+  delete window.__redlineNav;
+  app().replaceChildren();
+  reportNavState(0, -1);
 
   // The wrapper positions the minimap strip and nav buttons over the frame's right edge —
   // viewer chrome stays in the shell, outside the sandbox.
@@ -153,12 +259,24 @@ export async function bootSession(session: string, options: BootOptions = {}): P
   const frame = createFrame();
   content.appendChild(frame);
   app().appendChild(content);
+  currentFrame = frame;
+
+  const afterUrl = `${docBase}after.html`;
+  // Whatever state this render lands in, find has to work against the document it leaves in the
+  // frame — including the fallback states, which never build a redline. The frame is navigated
+  // by `src` in those, so wait for the load before searching it.
+  const handOverToFind = (): void => {
+    if (frame !== currentFrame) return;
+    if (frame.getAttribute("src")) frame.addEventListener("load", () => findBar?.attach(frame), { once: true });
+    else findBar?.attach(frame);
+  };
 
   try {
     const [before, after] = await Promise.all([
       fetchSide(`${docBase}before.html`),
       fetchSide(afterUrl),
     ]);
+    if (superseded()) return frame;
 
     // One-sided diff (file added or deleted): there is nothing to merge, and wrapping an entire
     // document in ins/del markup would be noise, not signal. Render the side that exists, plainly,
@@ -174,28 +292,30 @@ export async function bootSession(session: string, options: BootOptions = {}): P
         frame.src = `${docBase}before.html`;
         showBanner("info", "This file was deleted — showing the removed document.");
       }
-      return;
+      return frame;
     }
 
     if (before === after) {
       frame.src = afterUrl;
       showBanner("info", "No changes — both sides are identical.");
-      return;
+      return frame;
     }
 
-    const timeoutMs = options.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
+    const timeoutMs = bootOptions.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
     if (before.length + after.length > SIZE_LIMIT) {
       // Nothing is lost by not trying: the engine would run for minutes and then be abandoned.
       frame.src = afterUrl;
       showBanner("warning", tooLargeMessage());
-      return;
+      return frame;
     }
 
     // The engine runs in a worker, so the pane stays responsive — but the user still needs to
     // know why nothing has appeared yet, and to be able to give up.
     const cancellation = new AbortController();
+    engineRun = cancellation;
     let removeComputingBanner = (): void => {};
     const computingTimer = setTimeout(() => {
+      if (superseded()) return;
       const banner = showComputingBanner(() => cancellation.abort());
       removeComputingBanner = () => banner.remove();
     }, COMPUTING_BANNER_DELAY_MS);
@@ -204,9 +324,11 @@ export async function bootSession(session: string, options: BootOptions = {}): P
       redline = await buildRedline(before, after, docBase, {
         timeoutMs,
         signal: cancellation.signal,
-        execute: options.execute,
+        execute: bootOptions.execute,
       });
     } catch (error) {
+      // A superseded run was aborted BY the next render — that is not a state to report.
+      if (superseded()) return frame;
       if (error instanceof DiffTimeoutError || error instanceof DiffCancelledError) {
         // The redline was abandoned, not the document: show the new version and say which.
         frame.src = afterUrl;
@@ -216,13 +338,14 @@ export async function bootSession(session: string, options: BootOptions = {}): P
             ? tooLargeMessage(error.timeoutMs)
             : "Redline cancelled — showing the new version; use the text diff.",
         );
-        return;
+        return frame;
       }
       throw error;
     } finally {
       clearTimeout(computingTimer);
       removeComputingBanner();
     }
+    if (superseded()) return frame;
 
     const doc = frame.contentDocument;
     if (!doc) throw new Error("sandboxed frame document is not reachable");
@@ -250,7 +373,7 @@ export async function bootSession(session: string, options: BootOptions = {}): P
             "(e.g. attributes or <head> content) — showing the new version; use the text diff.",
         );
       }
-      return;
+      return frame;
     }
 
     if (redline.headDiffers || redline.bodyUnderReported) {
@@ -264,10 +387,16 @@ export async function bootSession(session: string, options: BootOptions = {}): P
     }
 
     let hiddenWarning: HTMLElement | null = null;
-    const controller = installMinimap(
-      content,
-      frame,
-      (anyMarkerVisible) => {
+    const controller = installMinimap(content, frame, {
+      mode: viewMode,
+      onMode: (mode) => {
+        viewMode = mode;
+        // The mode just hid one side, so any match inside it is unreachable — the count must stop
+        // offering it and navigation must stop landing on it. The minimap does not know the find
+        // bar exists; this is where the two meet.
+        findBar?.refresh();
+      },
+      onVisibility: (anyMarkerVisible: boolean) => {
         // The reviewed document's own CSS can collapse every marker to zero geometry (e.g.
         // `ins, del { display: none }`) — an apparently unchanged page. Say so; retract if a
         // late stylesheet load makes them visible again.
@@ -282,15 +411,20 @@ export async function bootSession(session: string, options: BootOptions = {}): P
           hiddenWarning = null;
         }
       },
-      reportNavState,
-    );
+      onState: reportNavState,
+    });
+    minimap = controller;
     // The IDE toolbar's next/prev actions land here via executeJavaScript.
     window.__redlineNav = (direction) => (direction === "next" ? controller.next() : controller.prev());
   } catch (error) {
+    if (superseded()) return frame;
     frame.src = afterUrl;
     const message = error instanceof Error ? error.message : String(error);
     showBanner("warning", `Redline diff failed — showing the new version instead. (${message})`);
+  } finally {
+    if (!superseded()) handOverToFind();
   }
+  return frame;
 }
 
 /**

@@ -15,6 +15,9 @@ import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.IdeActions
 import com.intellij.openapi.actionSystem.Toggleable
 import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.application.ModalityState
+import com.intellij.openapi.editor.event.DocumentEvent
+import com.intellij.openapi.editor.event.DocumentListener
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbAwareAction
 import com.intellij.openapi.util.Computable
@@ -25,6 +28,8 @@ import com.intellij.ui.jcef.JBCefBrowserBase
 import com.intellij.ui.jcef.JBCefBrowserBuilder
 import com.intellij.ui.jcef.JBCefClient
 import com.intellij.ui.jcef.JBCefJSQuery
+import com.intellij.util.Alarm
+import com.intellij.util.SingleAlarm
 import org.cef.browser.CefBrowser
 import org.cef.browser.CefFrame
 import org.cef.handler.CefLoadHandlerAdapter
@@ -48,8 +53,13 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
     private var browser: JBCefBrowser? = null
     private var sessionId: String? = null
 
-    // Extracted once in init(); kept so Swap Sides can rebuild the session without re-reading
-    // the request (documents may have changed underneath by then).
+    // The request's two sides. Kept because the documents are re-read on every live refresh: in
+    // a Local Changes or editor diff the after side IS the live Document and changes as the user
+    // types. VCS-revision sides are immutable, so re-reading them is a no-op.
+    private var beforeContent: DocumentContent? = null
+    private var afterContent: DocumentContent? = null
+
+    // Latest text of each side, and the directories their relative assets resolve against.
     private var beforeHtml = ""
     private var afterHtml = ""
     private var beforeDir: Path? = null
@@ -78,17 +88,10 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
         val contents = request.contents
         val before = contents[0] as? DocumentContent
         val after = contents[1] as? DocumentContent
+        beforeContent = before
+        afterContent = after
 
-        // A missing side (EmptyContent in an added/deleted-file diff) becomes the empty string;
-        // the shell recognizes it and renders the one-sided state.
-        //
-        // Application.runReadAction, not the `runReadAction {}` Kotlin extension or
-        // ReadAction.compute: both of those are deprecated from 2026.1, and the replacement the
-        // platform points at there (ReadAction.computeBlocking) does not exist on the 2024.1
-        // baseline. This overload is present in 2024.1 and undeprecated in 2026.2.
-        val app = ApplicationManager.getApplication()
-        beforeHtml = before?.let { c -> app.runReadAction(Computable { c.document.text }) } ?: ""
-        afterHtml = after?.let { c -> app.runReadAction(Computable { c.document.text }) } ?: ""
+        readSides()
         beforeDir = before?.let(::assetBaseDir)
         afterDir = after?.let(::assetBaseDir)
         dark = !JBColor.isBright()
@@ -108,6 +111,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
 
             panel.add(newBrowser.component, BorderLayout.CENTER)
             followIdeTheme(newBrowser)
+            followDocumentEdits()
         } catch (t: Throwable) {
             // A JCEF failure after openSession must not leak the session (dispose() may never
             // run if init() throws before the viewer is registered anywhere).
@@ -136,15 +140,115 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
     }
 
     /**
-     * (Re)open the session for the current [swapped] state. The v1 assets cheat serves the
-     * CURRENT after side's directory, falling back to the other side (VCS revisions and empty
-     * sides aren't file-backed).
+     * Snapshot both sides' text. Re-run on every live refresh and before a side swap; a missing
+     * side (EmptyContent in an added/deleted-file diff) becomes the empty string, which the shell
+     * recognizes as the one-sided state.
+     *
+     * Application.runReadAction, not the `runReadAction {}` Kotlin extension or
+     * ReadAction.compute: both of those are deprecated from 2026.1, and the replacement the
+     * platform points at there (ReadAction.computeBlocking) does not exist on the 2024.1
+     * baseline. This overload is present in 2024.1 and undeprecated in 2026.2.
      */
+    private fun readSides() {
+        val app = ApplicationManager.getApplication()
+        beforeHtml = beforeContent?.let { c -> app.runReadAction(Computable { c.document.text }) } ?: ""
+        afterHtml = afterContent?.let { c -> app.runReadAction(Computable { c.document.text }) } ?: ""
+    }
+
+    /**
+     * Which text plays which role for the current [swapped] state, and the directory
+     * document-relative assets resolve against. The v1 assets cheat serves the CURRENT after
+     * side's directory, falling back to the other side (VCS revisions and empty sides aren't
+     * file-backed).
+     */
+    private class Sides(val before: String, val after: String, val baseDir: Path?)
+
+    private fun currentSides(): Sides =
+        if (swapped) {
+            Sides(before = afterHtml, after = beforeHtml, baseDir = beforeDir ?: afterDir)
+        } else {
+            Sides(before = beforeHtml, after = afterHtml, baseDir = afterDir ?: beforeDir)
+        }
+
+    /** Opens the session the shell is first pointed at. Later changes go through [pushToShell]. */
     private fun openCurrentSession(): String {
-        val b = if (swapped) afterHtml else beforeHtml
-        val a = if (swapped) beforeHtml else afterHtml
-        val dir = if (swapped) beforeDir ?: afterDir else afterDir ?: beforeDir
-        return RedlineWebResources.openSession(beforeHtml = b, afterHtml = a, baseDir = dir)
+        val sides = currentSides()
+        return RedlineWebResources.openSession(
+            beforeHtml = sides.before,
+            afterHtml = sides.after,
+            baseDir = sides.baseDir,
+        )
+    }
+
+    /**
+     * Live refresh. The platform's text viewers follow the live Document as the user types; the
+     * redline has to as well, or a Local Changes diff quietly shows the file as it was when the
+     * pane opened.
+     *
+     * Debounced through a [SingleAlarm] on the EDT: the engine is quadratic, so a request per
+     * keystroke would be a request per character too many. `ModalityState.any()` keeps it firing
+     * while a modal (a commit dialog, say) is up, which is exactly when a diff is being read; the
+     * runnable only reads documents and posts JS, so it touches no model under that modality.
+     * Listeners and alarm are both scoped to this viewer's disposable, so they die with the pane.
+     *
+     * Every argument is passed explicitly, and yes, this overload is deprecated from 2024.3 on
+     * ("please use flow instead") — do not "fix" it. Kotlin compiles any call that RELIES on
+     * SingleAlarm's default arguments into the synthetic `DefaultConstructorMarker` constructor,
+     * whose signature changed in 2024.3 (a `CoroutineScope` parameter was added), so
+     * `SingleAlarm(task, delay, this)` is a `NoSuchMethodError` on every IDE from 2024.3 up — the
+     * Plugin Verifier reports it as a compatibility problem, not merely a deprecation. This
+     * five-argument form is a real constructor present and resolvable across 2024.1–2026.x; the
+     * non-deprecated alternatives are either `@ApiStatus.Internal`, coroutine-scoped, or absent
+     * on the 2024.1 baseline.
+     */
+    private fun followDocumentEdits() {
+        @Suppress("DEPRECATION")
+        val alarm = SingleAlarm(
+            Runnable { refresh() },
+            REFRESH_DEBOUNCE_MS,
+            this,
+            Alarm.ThreadToUse.SWING_THREAD,
+            ModalityState.any(),
+        )
+        val listener = object : DocumentListener {
+            override fun documentChanged(event: DocumentEvent) = alarm.cancelAndRequest()
+        }
+        // Distinct documents only: a file compared against itself would otherwise queue two
+        // requests per keystroke. Immutable VCS-revision documents simply never fire.
+        listOfNotNull(beforeContent?.document, afterContent?.document)
+            .distinct()
+            .forEach { it.addDocumentListener(listener, this) }
+    }
+
+    private fun refresh() {
+        val id = sessionId ?: return
+        val previousBefore = beforeHtml
+        val previousAfter = afterHtml
+        readSides()
+        // An edit can leave both sides' text identical (an undo/redo round-trip, a change the
+        // platform normalizes away). Re-rendering then buys nothing and costs a scroll jitter.
+        if (beforeHtml == previousBefore && afterHtml == previousAfter) return
+        pushToShell(id)
+    }
+
+    /**
+     * Replace the live session's content and ask the shell to re-render in place.
+     *
+     * Deliberately NOT `loadURL`: a reload would throw away the reader's scroll position and
+     * re-run the bridge-injection race. [RedlineWebResources.updateSession] keeps the session id,
+     * so the shell's fetch URLs and any in-flight asset request stay valid.
+     */
+    private fun pushToShell(id: String) {
+        val sides = currentSides()
+        val updated = RedlineWebResources.updateSession(
+            id = id,
+            beforeHtml = sides.before,
+            afterHtml = sides.after,
+            baseDir = sides.baseDir,
+        )
+        if (!updated) return
+        val cef = browser?.cefBrowser ?: return
+        cef.executeJavaScript("window.__redlineReload && window.__redlineReload();", cef.url, 0)
     }
 
     /**
@@ -245,9 +349,9 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
     }
 
     /**
-     * Swaps which side the redline treats as the original, Redline-locally: the session is
-     * rebuilt with the sides exchanged and the shell reloaded. Presented as a toggle so an
-     * active swap is visible in the toolbar.
+     * Swaps which side the redline treats as the original, Redline-locally: the live session's
+     * sides are exchanged and the shell re-renders in place (the same path a live refresh takes).
+     * Presented as a toggle so an active swap is visible in the toolbar.
      */
     private inner class SwapSidesAction :
         DumbAwareAction("Swap Sides", "Treat the other side as the original", AllIcons.Actions.SwapPanels) {
@@ -260,13 +364,13 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
         }
 
         override fun actionPerformed(e: AnActionEvent) {
-            val currentBrowser = browser ?: return
+            val id = sessionId ?: return
             swapped = !swapped
-            changeCount = 0 // disable nav until the reloaded shell reports its blocks
-            sessionId?.let(RedlineWebResources::closeSession)
-            val id = openCurrentSession()
-            sessionId = id
-            currentBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark))
+            // The shell re-reports "0,-1" as it tears down, but that round-trips through CEF and
+            // the toolbar's next update() may beat it back.
+            changeCount = 0
+            readSides() // pick up an edit the refresh debounce hasn't fired for yet
+            pushToShell(id)
         }
     }
 
@@ -288,5 +392,14 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
         sessionId?.let(RedlineWebResources::closeSession)
         sessionId = null
         // The browser is registered with Disposer against this viewer.
+    }
+
+    private companion object {
+        /**
+         * Quiet period after the last edit before the redline is recomputed. Long enough that
+         * typing a word queues one refresh rather than one per character, short enough to read
+         * as live.
+         */
+        const val REFRESH_DEBOUNCE_MS = 400
     }
 }

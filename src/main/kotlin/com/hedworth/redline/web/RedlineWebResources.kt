@@ -59,6 +59,18 @@ object RedlineWebResources {
         return id
     }
 
+    /**
+     * Replace a live session's content in place, keeping the id — so the viewer URL, the shell's
+     * `before.html`/`after.html` fetches and any in-flight asset request all stay valid. This is
+     * how a live refresh (the reviewed document was edited in the IDE) and Swap Sides reach the
+     * shell: no reload, so the reader keeps their scroll position and the JS bridge stays put.
+     *
+     * Returns false when the id is unknown — the viewer was disposed and its session closed, so
+     * there is no shell left to tell about it.
+     */
+    fun updateSession(id: String, beforeHtml: String, afterHtml: String, baseDir: Path?): Boolean =
+        sessions.computeIfPresent(id) { _, _ -> Session(beforeHtml, afterHtml, baseDir) } != null
+
     fun closeSession(id: String) {
         sessions.remove(id)
     }

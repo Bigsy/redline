@@ -41,6 +41,40 @@ const REDLINE_CSS = `
      structural change (and is the ONLY marking for annotation-only changes, e.g. empty blocks). */
   [data-diff-node="ins"] { outline: 1px dashed #7ac47a !important; }
   [data-diff-node="del"] { outline: 1px dashed #d98c8c !important; }
+  /* The change block the reader is currently on (minimap.ts#highlight). box-shadow, not outline:
+     outline is already spent on the ins/del border above. */
+  [data-redline-current] { box-shadow: 0 0 0 2px #3574f0 !important; }
+  /* View modes. The shell stamps html[data-redline-mode] on the framed document
+     (minimap.ts#setMode), and only the shell can SET it: reviewed scripts never run, reviewed CSS
+     cannot set attributes, and sanitization refuses the attribute from the document itself (see
+     REDLINE_OWNED_ATTRIBUTES).
+     Reviewed CSS can still SELECT on it, though: a rule reading
+     html[data-redline-mode="final"] ins.redline { display: none } would empty the Final view
+     while Redline looked honest. Nothing here can stop that — the visibility/opacity pins above
+     do not cover 'display' at all. What catches it is the per-mode geometry check in
+     minimap.ts#markersVisible, which is why that check must stay live in original/final rather
+     than being switched off there.
+     Markers hidden by the rules below measure zero and drop out of the minimap by design (the
+     zero-height skip rule). */
+  html[data-redline-mode="original"] ins.redline,
+  html[data-redline-mode="original"] [data-diff-node="ins"] { display: none !important; }
+  html[data-redline-mode="final"] del.redline,
+  html[data-redline-mode="final"] [data-diff-node="del"] { display: none !important; }
+  /* The side that survives is the document as it was/will be, so it is shown unmarked. The
+     color reset matters: the pin above exists only because the marker BACKGROUNDS are light, and once the
+     background is transparent it is simply wrong — it painted near-black text onto a dark
+     document's canvas, and flattened coloured headings and links inside a changed span. */
+  html[data-redline-mode="original"] del.redline,
+  html[data-redline-mode="final"] ins.redline {
+    background: transparent !important;
+    color: inherit !important;
+    text-decoration: none !important;
+    outline: none !important;
+  }
+  html[data-redline-mode="original"] del.redline img,
+  html[data-redline-mode="original"] [data-diff-node="del"],
+  html[data-redline-mode="final"] ins.redline img,
+  html[data-redline-mode="final"] [data-diff-node="ins"] { outline: none !important; }
 `;
 
 /**
@@ -390,15 +424,53 @@ function normalizeForComparison(html: string, scratch: Document): string {
  * blocked by sandboxing — so refresh removal here (plus the Kotlin navigation guard) is what
  * actually keeps the pane on the redline.
  */
+/**
+ * Attributes Redline itself means something by, and therefore will not accept from a reviewed
+ * document. `data-diff-node`/`data-operation-index` are how the ENGINE annotates a changed block
+ * in place (decision #1); `data-redline-mode`/`data-redline-current` are how the SHELL drives the
+ * view modes and the current-block highlight (minimap.ts).
+ *
+ * The `redline` CLASS on an `ins`/`del` is stripped for the same reason, just below — see there.
+ *
+ * A reviewed document carrying any of them would be lying to the reader. `data-diff-node="del"`
+ * on an untouched element paints it as a deletion, counts as a marker, plots a minimap tick, and
+ * makes `reconstructSide` drop the element from the before side — so the "highlights are
+ * incomplete" warning fires as well. `data-redline-mode="final"` on the document's own `<html>`
+ * hides every real deletion before the reader has touched anything, which is precisely what
+ * decision #6 exists to prevent. They are ours to set, on markup we produced.
+ */
+const REDLINE_OWNED_ATTRIBUTES = new Set([
+  "data-diff-node",
+  "data-operation-index",
+  "data-redline-mode",
+  "data-redline-current",
+]);
+
 export function sanitizeReviewedDocument(doc: Document): void {
   doc.querySelectorAll("script").forEach((node) => node.remove());
   doc.querySelectorAll("meta[http-equiv]").forEach((node) => {
-    if (node.getAttribute("http-equiv")?.trim().toLowerCase() === "refresh") node.remove();
+    const equiv = node.getAttribute("http-equiv")?.trim().toLowerCase();
+    // `refresh`: the sandbox does not block self-navigation. `content-security-policy`: CSP
+    // policies INTERSECT, so a reviewed `style-src 'none'` kills the stylesheet this module
+    // injects — every marker colour, the visibility pins and the view-mode rules with it — and
+    // inserting ours first does not help. The frame's policy is ours to set (assembleRedline adds
+    // it after this runs) and the scheme handler sends the same one as a header.
+    if (equiv === "refresh" || equiv === "content-security-policy") node.remove();
   });
-  // Inline handlers (onclick etc.) survive tag stripping; drop them too.
+  // A document-supplied `<ins class="redline">` is indistinguishable from an engine marker: it
+  // gets painted and counted as a change, and in original/final mode it hides content that really
+  // is in that version of the document. The class is ours on ins/del specifically; anywhere else
+  // it means nothing to us, so the document keeps it.
+  doc.querySelectorAll("ins.redline, del.redline").forEach((el) => {
+    el.classList.remove("redline");
+    if (el.classList.length === 0) el.removeAttribute("class");
+  });
+  // `*` reaches <html> too, which is where a forged data-redline-mode would sit.
   doc.querySelectorAll("*").forEach((el) => {
     for (const attr of [...el.attributes]) {
-      if (attr.name.toLowerCase().startsWith("on")) el.removeAttribute(attr.name);
+      const name = attr.name.toLowerCase();
+      // Inline handlers (onclick etc.) survive tag stripping; drop them too.
+      if (name.startsWith("on") || REDLINE_OWNED_ATTRIBUTES.has(name)) el.removeAttribute(attr.name);
     }
   });
   // The engine's tokenizer silently drops HTML comments; strip them from both sides up front so

@@ -108,6 +108,72 @@ describe("sanitization (defense-in-depth behind the sandbox)", () => {
     expect(a.getAttributeNames().sort()).toEqual(["href", "title"]);
   });
 
+  it("refuses Redline's own attributes from a reviewed document", async () => {
+    // Every marker and every view-mode decision must have been made by us. See
+    // REDLINE_OWNED_ATTRIBUTES: these four are how the engine and the shell talk to the CSS.
+    const parsed = new DOMParser().parseFromString(
+      '<!doctype html><html data-redline-mode="final"><head></head><body>' +
+        '<p data-diff-node="del" data-operation-index="7" data-redline-current="" class="keep">x</p>' +
+        "</body></html>",
+      "text/html",
+    );
+    sanitizeReviewedDocument(parsed);
+    expect(parsed.documentElement.getAttributeNames()).toEqual([]);
+    expect(parsed.querySelector("p")!.getAttributeNames()).toEqual(["class"]);
+  });
+
+  it("a document that fakes a deletion gets no marker and no incomplete-highlights warning", async () => {
+    // Without the attribute strip: the untouched <li> is painted and counted as a deletion, and
+    // reconstructSide drops it from the before side, so bodyUnderReported fires too.
+    const faked = '<ul><li data-diff-node="del">untouched</li></ul>';
+    const result = await buildRedline(doc(`${faked}<p>old text</p>`), doc(`${faked}<p>new text</p>`));
+    const parsed = new DOMParser().parseFromString(result.html, "text/html");
+
+    expect(parsed.querySelectorAll("[data-diff-node]")).toHaveLength(0);
+    expect(parsed.querySelector("li")!.textContent).toBe("untouched");
+    expect(result.bodyUnderReported).toBe(false);
+    // The real change is still marked.
+    expect(markers(result.html).length).toBeGreaterThan(0);
+  });
+
+  it("a document cannot preselect a view mode and hide the other side's changes", async () => {
+    const result = await buildRedline(
+      '<!doctype html><html><head></head><body><p>old text</p></body></html>',
+      '<!doctype html><html data-redline-mode="final"><head></head><body><p>new text</p></body></html>',
+    );
+    const parsed = new DOMParser().parseFromString(result.html, "text/html");
+    expect(parsed.documentElement.hasAttribute("data-redline-mode")).toBe(false);
+    // The deletion the forged mode would have hidden is present and marked.
+    expect(parsed.querySelector("del.redline")).not.toBeNull();
+  });
+
+  it("removes a reviewed Content-Security-Policy meta, which would kill our own stylesheet", async () => {
+    // CSP policies INTERSECT: a reviewed `style-src 'none'` disables the injected REDLINE_CSS
+    // entirely — marker colours, the visibility pins and the view-mode rules — and inserting ours
+    // first does not help. The frame's policy is ours to set.
+    const hostile = '<meta HTTP-EQUIV=" Content-Security-Policy " content="style-src \'none\'">';
+    const result = await buildRedline(doc("<p>old text</p>"), doc("<p>new text</p>", hostile));
+    const parsed = new DOMParser().parseFromString(result.html, "text/html");
+    const policies = [...parsed.querySelectorAll("meta[http-equiv]")].map((m) => m.getAttribute("content"));
+
+    // Exactly one policy survives: the one assembleRedline adds after sanitization.
+    expect(policies).toEqual([DOC_CSP]);
+    expect(parsed.querySelector("style")?.textContent).toContain("ins.redline");
+  });
+
+  it("a document cannot pass its own ins/del off as engine markers", async () => {
+    // A forged marker is painted and counted as a change, and in original/final mode it hides
+    // content that really is in that version of the document.
+    const forged = '<p>keep <del class="redline">forged</del> and <ins class="keep redline">also</ins></p>';
+    const result = await buildRedline(doc(`${forged}<p>old text</p>`), doc(`${forged}<p>new text</p>`));
+    const parsed = new DOMParser().parseFromString(result.html, "text/html");
+
+    expect(parsed.querySelectorAll("del.redline, ins.redline")).toHaveLength(2); // the real change only
+    expect(parsed.querySelector("del")!.textContent).toBe("forged"); // the text itself is untouched
+    expect(parsed.querySelector("ins.keep")).not.toBeNull(); // and its other classes survive
+    expect(result.bodyUnderReported).toBe(false);
+  });
+
   it("removes meta refresh directives (sandbox does NOT block self-navigation)", async () => {
     const parsed = new DOMParser().parseFromString(
       doc("<p>x</p>", '<meta HTTP-EQUIV=" Refresh " content="0; url=https://evil.example/">' +
@@ -117,6 +183,33 @@ describe("sanitization (defense-in-depth behind the sandbox)", () => {
     sanitizeReviewedDocument(parsed);
     const equivs = [...parsed.querySelectorAll("meta[http-equiv]")].map((m) => m.getAttribute("http-equiv"));
     expect(equivs).toEqual(["content-type"]);
+  });
+});
+
+describe("view-mode CSS (the shell's Original/Redline/Final control has nothing to drive without it)", () => {
+  const styleOf = async () => {
+    const result = await buildRedline(doc("<p>old text</p>"), doc("<p>new text</p>"));
+    const parsed = new DOMParser().parseFromString(result.html, "text/html");
+    return parsed.querySelector("style")!.textContent ?? "";
+  };
+
+  it("hides each side in the mode that should not show it", async () => {
+    const css = await styleOf();
+    expect(css).toContain('html[data-redline-mode="original"] ins.redline');
+    expect(css).toContain('html[data-redline-mode="original"] [data-diff-node="ins"]');
+    expect(css).toContain('html[data-redline-mode="final"] del.redline');
+    expect(css).toContain('html[data-redline-mode="final"] [data-diff-node="del"]');
+  });
+
+  it("resets the marker colour on the surviving side, not just its background", async () => {
+    // The `color` pin exists for the light marker backgrounds; once the background is transparent
+    // it painted near-black text onto a dark document's canvas.
+    const css = await styleOf();
+    expect(css).toMatch(/html\[data-redline-mode="original"\] del\.redline,[\s\S]*?color: inherit !important/);
+  });
+
+  it("marks the current change block without spending the outline the markers already use", async () => {
+    expect(await styleOf()).toContain("[data-redline-current] { box-shadow:");
   });
 });
 

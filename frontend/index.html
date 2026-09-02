@@ -66,6 +66,9 @@
         right: 22px;
         display: flex;
         flex-direction: column;
+        /* Right-aligned, so the 26px arrows keep hugging the minimap strip instead of being
+           pushed left by the much wider mode control above them. */
+        align-items: flex-end;
         gap: 4px;
       }
       .redline-nav-button {
@@ -79,6 +82,51 @@
       }
       .redline-nav-button:hover {
         background: #e8f1fb;
+      }
+      /* "3 / 12" between the nav buttons. It needs the same pill as the buttons: this floats over
+         the REVIEWED document, whose canvas stays white in both themes (see .redline-frame), so
+         text coloured for the shell's background is either illegible or lost in body text. */
+      .redline-nav-count {
+        font: 11px system-ui, sans-serif;
+        min-width: 26px;
+        padding: 2px 4px;
+        box-sizing: border-box;
+        text-align: center;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.92);
+        color: #1a1a1a;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        user-select: none;
+      }
+      /* Original / Redline / Final, as one segmented control. */
+      .redline-modes {
+        display: flex;
+      }
+      .redline-mode-button {
+        font: 11px system-ui, sans-serif;
+        padding: 3px 5px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-right-width: 0;
+        background: rgba(255, 255, 255, 0.92);
+        color: #1a1a1a;
+        cursor: pointer;
+      }
+      .redline-mode-button:first-child {
+        border-radius: 4px 0 0 4px;
+      }
+      .redline-mode-button:last-child {
+        border-radius: 0 4px 4px 0;
+        border-right-width: 1px;
+      }
+      .redline-mode-button:hover {
+        background: #e8f1fb;
+      }
+      .redline-mode-button[aria-pressed='true'] {
+        background: #3574f0;
+        border-color: #3574f0;
+        color: #fff;
       }
       .redline-banner {
         font: 13px/1.5 system-ui, sans-serif;
@@ -105,6 +153,69 @@
       }
       .redline-cancel:hover {
         background: #fff;
+      }
+      /* Find bar. Sits on document.body, not in #app, so a re-render cannot replace it. */
+      .redline-findbar {
+        position: fixed;
+        top: 10px;
+        /* Left, not right: the minimap strip, the nav buttons and the mode control all live on
+           the right edge, and a floating bar there swallows their clicks. */
+        left: 12px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        padding: 6px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 8px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+        font: 13px system-ui, sans-serif;
+      }
+      /* display:flex above would otherwise beat the hidden attribute's display:none. */
+      .redline-findbar[hidden] {
+        display: none;
+      }
+      .redline-findbar-search {
+        min-width: 190px;
+        padding: 3px 7px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        background: #fff;
+        color: #1a1a1a;
+        font: inherit;
+        outline: none;
+      }
+      .redline-findbar-search:focus {
+        border-color: #3574f0;
+      }
+      .redline-findbar button {
+        padding: 3px 6px;
+        border: none;
+        border-radius: 4px;
+        background: transparent;
+        color: #1a1a1a;
+        font: inherit;
+        cursor: pointer;
+      }
+      .redline-findbar button:hover {
+        background: rgba(0, 0, 0, 0.09);
+      }
+      .redline-findbar-case[aria-pressed='true'] {
+        background: #3574f0;
+        color: #fff;
+      }
+      .redline-findbar-count {
+        min-width: 58px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+        opacity: 0.75;
+        user-select: none;
+      }
+      .redline-findbar-count.redline-findbar-no-results {
+        color: #a4262c;
+        opacity: 1;
       }
       .redline-error {
         font: 13px/1.5 system-ui, sans-serif;
@@ -133,6 +244,24 @@
       html[data-theme='dark'] .redline-nav-button:hover {
         background: #3d4045;
       }
+      html[data-theme='dark'] .redline-nav-count {
+        background: rgba(43, 45, 48, 0.92);
+        border-color: rgba(255, 255, 255, 0.28);
+        color: #dfe1e5;
+      }
+      html[data-theme='dark'] .redline-mode-button {
+        background: rgba(43, 45, 48, 0.92);
+        border-color: rgba(255, 255, 255, 0.28);
+        color: #dfe1e5;
+      }
+      html[data-theme='dark'] .redline-mode-button:hover {
+        background: #3d4045;
+      }
+      html[data-theme='dark'] .redline-mode-button[aria-pressed='true'] {
+        background: #3574f0;
+        border-color: #3574f0;
+        color: #fff;
+      }
       html[data-theme='dark'] .redline-banner {
         border-bottom-color: rgba(255, 255, 255, 0.2);
       }
@@ -151,6 +280,25 @@
       }
       html[data-theme='dark'] .redline-cancel:hover {
         background: #3d4045;
+      }
+      html[data-theme='dark'] .redline-findbar {
+        background: #2b2d30;
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      }
+      html[data-theme='dark'] .redline-findbar-search {
+        background: #1e1f22;
+        border-color: rgba(255, 255, 255, 0.28);
+        color: #dfe1e5;
+      }
+      html[data-theme='dark'] .redline-findbar button {
+        color: #dfe1e5;
+      }
+      html[data-theme='dark'] .redline-findbar button:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      html[data-theme='dark'] .redline-findbar-count.redline-findbar-no-results {
+        color: #f28b82;
       }
       html[data-theme='dark'] .redline-error {
         color: #f28b82;
