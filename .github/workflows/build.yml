@@ -140,3 +140,79 @@ jobs:
         with:
           name: verifier-report
           path: build/reports/pluginVerifier/
+
+  # Release: runs only for `v*` tags, after every other job is green. Publishes to the JetBrains
+  # Marketplace and mirrors the signed zip on a GitHub Release. Needs four repository secrets:
+  # CERTIFICATE_CHAIN, PRIVATE_KEY, PRIVATE_KEY_PASSWORD (plugin signing) and PUBLISH_TOKEN
+  # (Marketplace). The release steps themselves are documented in README "Releasing".
+  publish:
+    name: Publish (Marketplace + GitHub Release)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [check, e2e, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the GitHub Release
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # A tag that does not match gradle.properties would publish the wrong version number.
+      - name: Check the tag matches pluginVersion
+        run: |
+          version="$(sed -nE 's/^pluginVersion[[:space:]]*=[[:space:]]*//p' gradle.properties | tr -d '[:space:]')"
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match pluginVersion=${version} in gradle.properties"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+        id: version
+
+      # Fails if CHANGELOG.md has no section for this version, i.e. [Unreleased] was not moved
+      # under a version heading — the same section becomes the Marketplace change notes.
+      - name: Render release notes from CHANGELOG.md
+        run: |
+          ./gradlew getChangelog --project-version="${{ steps.version.outputs.version }}" \
+            --no-header --console=plain -q > build/release-notes.md
+          test -s build/release-notes.md
+          cat build/release-notes.md
+
+      - name: Build and sign plugin
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+        run: ./gradlew signPlugin
+
+      # Before publishPlugin: creating/updating a release is idempotent on re-run, publishing a
+      # version to the Marketplace is not, so the step that cannot be repeated goes last.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Redline ${{ steps.version.outputs.version }}
+          body_path: build/release-notes.md
+          files: build/distributions/*-signed.zip
+          fail_on_unmatched_files: true
+
+      - name: Publish to JetBrains Marketplace
+        env:
+          CERTIFICATE_CHAIN: ${{ secrets.CERTIFICATE_CHAIN }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          PRIVATE_KEY_PASSWORD: ${{ secrets.PRIVATE_KEY_PASSWORD }}
+          PUBLISH_TOKEN: ${{ secrets.PUBLISH_TOKEN }}
+        run: ./gradlew publishPlugin

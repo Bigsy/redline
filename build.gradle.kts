@@ -1,3 +1,4 @@
+import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
@@ -23,6 +24,7 @@ plugins {
     id("java")
     id("org.jetbrains.kotlin.jvm") version "2.3.21"
     id("org.jetbrains.intellij.platform") version "2.17.0"
+    id("org.jetbrains.changelog") version "2.5.0"
 }
 
 group = providers.gradleProperty("pluginGroup").get()
@@ -65,6 +67,21 @@ intellijPlatform {
     pluginConfiguration {
         version = providers.gradleProperty("pluginVersion")
 
+        // Change notes come from CHANGELOG.md (single source; plugin.xml has no <change-notes>).
+        // The section matching pluginVersion is used when it exists, so a release shows its own
+        // notes; until CHANGELOG's [Unreleased] is moved under a version heading (see README
+        // "Releasing") the unreleased section is rendered instead, which is what a local
+        // buildPlugin between releases should show.
+        // Zip the parsed-changelog PROVIDER rather than calling `changelog.getOrNull(...)` inside
+        // the lambda: the extension accessor resolves through the Project, which the configuration
+        // cache refuses to serialize.
+        changeNotes = changelog.instance.zip(providers.gradleProperty("pluginVersion")) { log, pluginVersion ->
+            val item = log.items[pluginVersion]
+                ?: log.unreleasedItem
+                ?: error("CHANGELOG.md has neither a [$pluginVersion] section nor an [Unreleased] one")
+            log.renderItem(item.withHeader(false).withEmptySections(false), Changelog.OutputType.HTML)
+        }
+
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
             untilBuild = provider { null } // open-ended; see gradle.properties
@@ -87,6 +104,13 @@ intellijPlatform {
             recommended()
         }
     }
+}
+
+// CHANGELOG.md is Keep-a-Changelog: `## [Unreleased]`, then `## [x.y.z] — date` sections with
+// Added/Changed/… groups and compare links at the bottom. The release workflow reads the section
+// for the tagged version with `getChangelog --project-version=…`.
+changelog {
+    repositoryUrl = providers.gradleProperty("pluginRepositoryUrl")
 }
 
 kotlin {

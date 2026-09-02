@@ -99,6 +99,27 @@ pnpm run test:e2e        # sandbox-enforcement proofs in real Chromium
 
 Release history is in [CHANGELOG.md](CHANGELOG.md).
 
+### Releasing
+
+Change notes live only in `CHANGELOG.md`; the build renders the section matching
+`pluginVersion` into the plugin descriptor, so `plugin.xml` carries none. A release is a tag:
+
+1. Bump `pluginVersion` in `gradle.properties`.
+2. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [x.y.z] — YYYY-MM-DD`, add a fresh empty
+   `## [Unreleased]` above it, and update the compare links at the bottom.
+3. Commit, then `git tag vx.y.z && git push origin main vx.y.z`.
+
+The `publish` job in `.github/workflows/build.yml` then runs after the checks, e2e and plugin
+verifier pass: it refuses a tag that does not match `pluginVersion`, fails if `CHANGELOG.md` has
+no section for that version, signs the zip, creates a GitHub Release with the notes and the
+signed zip attached, and publishes to the JetBrains Marketplace. It needs four repository
+secrets: `CERTIFICATE_CHAIN`, `PRIVATE_KEY`, `PRIVATE_KEY_PASSWORD` (plugin signing) and
+`PUBLISH_TOKEN` (Marketplace). To preview the notes locally:
+
+```
+./gradlew getChangelog --project-version=x.y.z --no-header --console=plain -q
+```
+
 ## License
 
 [MIT](LICENSE)
