@@ -1,4 +1,8 @@
-<idea-plugin>
+<!-- require-restart: the viewer registers a CefSchemeHandlerFactory with CEF, and CEF offers no
+     way to unregister a single factory (only clearSchemeHandlerFactories(), which would drop other
+     plugins' factories too). A hot plugin update would therefore leave the old factory — and its
+     classloader — alive, so ask for a restart on install/update instead. -->
+<idea-plugin require-restart="true">
     <id>com.hedworth.redline</id>
     <!-- Marketplace restricts plugin names to letters, digits, spaces and .,+_-/:()#'&[]| — an
          em dash here fails verifyPlugin with "contains invalid characters". Keep the ASCII hyphen. -->

@@ -34,7 +34,12 @@ Requires an IntelliJ Platform IDE **2024.1 or newer** with JCEF available (bundl
 JetBrains IDEs; on 2026.2+ it lives in the bundled *Web Browser (JCEF)* plugin, which
 Redline picks up automatically).
 
-Until the Marketplace listing is live, install from a local build:
+Install from inside the IDE: **Settings → Plugins → Marketplace**, search for
+**Redline**, and click *Install*. (Or open the
+[Marketplace listing](https://plugins.jetbrains.com/plugin/33487-redline--rendered-html-diff)
+and use *Install to IDE*.)
+
+**From source.** To run an unreleased build, build the zip yourself:
 
 ```
 ./gradlew buildPlugin
@@ -59,6 +64,10 @@ shell and both documents over a custom scheme handler; the shell (a Vite + TypeS
 in `frontend/`, bundled into `src/main/resources/web/` at build time) computes the merged
 redline with [node-htmldiff](https://www.npmjs.com/package/node-htmldiff) (MIT) and renders
 it into a sandboxed iframe.
+
+The comparison itself runs in a Web Worker, so the pane stays responsive on large documents;
+if it outruns its 15-second budget (or the pair is over 2 MB) Redline shows the new version
+with a banner instead of freezing, and you can cancel a slow comparison while it runs.
 
 ## Development
 

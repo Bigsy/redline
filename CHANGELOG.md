@@ -6,6 +6,26 @@ All notable changes to Redline are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Large documents no longer freeze the viewer. The comparison runs in a Web Worker with a
+  15-second budget and a Cancel button; documents that outrun it (or exceed 2 MB across both
+  sides) show the new version with a banner pointing at the text diff, instead of an
+  unresponsive pane with no way out.
+- The viewer chrome now follows the IDE theme live: switching look-and-feel with a Redline diff
+  open re-themes the pane instead of waiting for it to be reopened.
+
+### Changed
+
+- Whitespace- and line-ending-only edits are called out as such ("Only whitespace or line endings
+  differ — the rendered document is unchanged") instead of the misleading "not visible in rendered
+  form … use the text diff" warning.
+- Installing or updating Redline now asks for an IDE restart. The viewer registers a scheme
+  handler with JCEF, which offers no way to withdraw a single handler, so a hot swap would leave
+  the previous version's handler (and its classloader) behind.
+- More document assets are served with a correct content type (`ico`, `json`, `ttf`, `otf`, `xml`,
+  `avif`, `bmp`, `txt`, `htm`/`xhtml`, `mjs`), and extensions are matched case-insensitively.
+
 ## [0.1.0] — 2026-08-11
 
 Initial release.

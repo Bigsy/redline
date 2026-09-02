@@ -24,16 +24,16 @@ function pair(name: string): { before: string; after: string } {
 describe("mock corpus", () => {
   it.each(["transaction-guide", "collection-guide", "welcome-pack"])(
     "%s produces a marked redline",
-    (name) => {
+    async (name) => {
       const { before, after } = pair(name);
-      const result = buildRedline(before, after);
+      const result = await buildRedline(before, after);
       expect(result.markerCount).toBeGreaterThan(0);
     },
   );
 
-  it("transaction guide: renumbered TOC and table changes are marked, not swallowed", () => {
+  it("transaction guide: renumbered TOC and table changes are marked, not swallowed", async () => {
     const { before, after } = pair("transaction-guide");
-    const result = buildRedline(before, after);
+    const result = await buildRedline(before, after);
 
     const doc = new DOMParser().parseFromString(result.html, "text/html");
     const tocMarkers = doc.querySelectorAll("nav.toc ins.redline, nav.toc del.redline");
@@ -43,9 +43,9 @@ describe("mock corpus", () => {
     expect(insertedText).toContain("250");
   });
 
-  it("collection guide: the attribute-only callout change is flagged as under-reported", () => {
+  it("collection guide: the attribute-only callout change is flagged as under-reported", async () => {
     const { before, after } = pair("collection-guide");
-    const result = buildRedline(before, after);
+    const result = await buildRedline(before, after);
     // The callout's class change (info -> warning) is invisible in the merged body; the marked
     // text edits must not silence the incomplete-highlights signal.
     expect(result.markerCount).toBeGreaterThan(0);

@@ -238,18 +238,25 @@ object RedlineWebResources {
                 ResourceResponse(status = 404, statusText = "Not Found", mimeType = "text/plain", bytes = message.toByteArray())
 
             private fun mimeType(path: String): String =
-                when (path.substringAfterLast('.', missingDelimiterValue = "")) {
-                    "html" -> "text/html"
-                    "js" -> "application/javascript"
+                when (path.substringAfterLast('.', missingDelimiterValue = "").lowercase()) {
+                    "html", "htm", "xhtml" -> "text/html"
+                    "js", "mjs" -> "application/javascript"
                     "css" -> "text/css"
                     "svg" -> "image/svg+xml"
                     "png" -> "image/png"
                     "jpg", "jpeg" -> "image/jpeg"
                     "gif" -> "image/gif"
                     "webp" -> "image/webp"
+                    "avif" -> "image/avif"
+                    "bmp" -> "image/bmp"
+                    "ico" -> "image/x-icon"
                     "woff" -> "font/woff"
                     "woff2" -> "font/woff2"
-                    "map" -> "application/json"
+                    "ttf" -> "font/ttf"
+                    "otf" -> "font/otf"
+                    "json", "map" -> "application/json"
+                    "xml" -> "application/xml"
+                    "txt" -> "text/plain"
                     "wasm" -> "application/wasm"
                     else -> "application/octet-stream"
                 }

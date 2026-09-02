@@ -139,6 +139,9 @@ class RedlineRoutingTest {
             "a.png" to "image/png",
             "a.jpeg" to "image/jpeg",
             "a.woff2" to "font/woff2",
+            "a.ico" to "image/x-icon",
+            "a.json" to "application/json",
+            "a.PNG" to "image/png", // extensions are matched case-insensitively
             "a.bin" to "application/octet-stream",
             "noextension" to "application/octet-stream",
         )

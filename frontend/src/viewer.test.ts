@@ -33,6 +33,9 @@ function frame(): HTMLIFrameElement {
 
 const doc = (body: string) => `<!doctype html><html><head></head><body>${body}</body></html>`;
 
+/** An engine run that never finishes, so the time budget or Cancel is the only way out. */
+const stalledEngine = () => () => ({ result: new Promise<string>(() => {}), terminate: () => {} });
+
 beforeEach(() => {
   document.body.innerHTML = '<div id="app"></div>';
   delete window.__redlineNav;
@@ -72,6 +75,15 @@ describe("viewer truthfulness states", () => {
     const [banner] = banners();
     expect(banner.kind).toBe("warning");
     expect(banner.text).toContain("not visible in rendered form");
+    expect(frame().src).toContain("/doc/s1/after.html");
+  });
+
+  it("state 3 — whitespace-only change: info banner saying the rendered document is unchanged", async () => {
+    sides(doc("<p>same text</p>"), doc("\n  <p>same text</p>\n"));
+    await bootSession("s1");
+    const [banner] = banners();
+    expect(banner.kind).toBe("info");
+    expect(banner.text).toBe("Only whitespace or line endings differ — the rendered document is unchanged.");
     expect(frame().src).toContain("/doc/s1/after.html");
   });
 
@@ -137,6 +149,61 @@ describe("viewer truthfulness states", () => {
     window.__redlineReport = report;
     window.__redlineFlush!();
     expect(report).toHaveBeenCalledWith("0,-1");
+  });
+
+  it("state 5 — too large: skips the engine, warns, and shows the after side", async () => {
+    // Over SIZE_LIMIT (2 MB across both sides): the engine is never asked.
+    const huge = doc(`<p>${"x".repeat(1_100_000)}</p>`);
+    sides(huge, huge.replace("x", "y"));
+    await bootSession("s1");
+    const [banner] = banners();
+    expect(banner.kind).toBe("warning");
+    expect(banner.text).toContain("too large for the rendered redline");
+    expect(banner.text).not.toContain("gave up after"); // no run was attempted
+    expect(frame().src).toContain("/doc/s1/after.html");
+  });
+
+  it("state 5 — timed out: warns with the budget it gave up on, and shows the after side", async () => {
+    sides(doc("<p>old text</p>"), doc("<p>new text</p>"));
+    // happy-dom has no Worker, so the real engine runs inline and finishes before any budget can
+    // expire; a stalled engine is the only way to reach the give-up path headlessly.
+    await bootSession("s1", { timeoutMs: 5, execute: stalledEngine() });
+    const [banner] = banners();
+    expect(banner.kind).toBe("warning");
+    expect(banner.text).toContain("too large for the rendered redline");
+    expect(banner.text).toContain("gave up after");
+    expect(frame().src).toContain("/doc/s1/after.html");
+  });
+
+  it("the Computing banner is gone once the redline lands", async () => {
+    sides(doc("<p>old text</p>"), doc("<p>new text</p>"));
+    await bootSession("s1");
+    expect(banners()).toEqual([]);
+    expect(document.querySelector(".redline-cancel")).toBeNull();
+    expect(frame().contentDocument?.querySelector("ins.redline")).not.toBeNull();
+  });
+
+  it("the Computing banner is shown while the engine runs, with a working Cancel", async () => {
+    sides(doc("<p>old text</p>"), doc("<p>new text</p>"));
+    const booting = bootSession("s1", { timeoutMs: 60_000, execute: stalledEngine() });
+
+    const cancel = await vi.waitFor(() => {
+      const button = document.querySelector<HTMLButtonElement>(".redline-cancel");
+      if (!button) throw new Error("no cancel button yet");
+      return button;
+    });
+    expect(banners()[0]).toMatchObject({ kind: "info" });
+    expect(banners()[0].text).toContain("Computing redline");
+
+    cancel.click();
+    await booting;
+
+    // Same shape as the give-up state: the document is intact, only the redline was abandoned.
+    const [banner] = banners();
+    expect(banner.kind).toBe("warning");
+    expect(banner.text).toContain("cancelled");
+    expect(frame().src).toContain("/doc/s1/after.html");
+    expect(document.querySelector(".redline-cancel")).toBeNull();
   });
 
   it("applyTheme sets the shell theme from the URL parameter, defaulting to light", () => {

@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
+    "shot": "node ../assets/marketplace/compose-shot.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

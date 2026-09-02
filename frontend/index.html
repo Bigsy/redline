@@ -93,6 +93,19 @@
         background: #fdf2d0;
         color: #5f4a0e;
       }
+      /* Cancel control inside the "Computing redline…" banner. */
+      .redline-cancel {
+        font: 12px system-ui, sans-serif;
+        margin-left: 8px;
+        padding: 1px 8px;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.92);
+        cursor: pointer;
+      }
+      .redline-cancel:hover {
+        background: #fff;
+      }
       .redline-error {
         font: 13px/1.5 system-ui, sans-serif;
         padding: 12px;
@@ -130,6 +143,14 @@
       html[data-theme='dark'] .redline-banner.warning {
         background: #453a12;
         color: #f0d268;
+      }
+      html[data-theme='dark'] .redline-cancel {
+        background: rgba(43, 45, 48, 0.92);
+        border-color: rgba(255, 255, 255, 0.28);
+        color: #dfe1e5;
+      }
+      html[data-theme='dark'] .redline-cancel:hover {
+        background: #3d4045;
       }
       html[data-theme='dark'] .redline-error {
         color: #f28b82;

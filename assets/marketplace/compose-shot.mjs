@@ -1,6 +1,10 @@
 // One-off marketplace-asset composer (not part of the build): renders a two-panel
 // "text diff vs Redline" comparison and screenshots it with the Playwright chromium.
-// Usage: node compose-shot.mjs <demo.diff> <hero-crop.png> <out.png>
+//
+// It imports @playwright/test, which is only installed in frontend/node_modules, so run it
+// from `frontend/` (where Node resolves that dependency):
+//   cd frontend && pnpm run shot ../<demo.diff> ../<hero-crop.png> ../<out.png>
+// which is `node ../assets/marketplace/compose-shot.mjs <demo.diff> <hero-crop.png> <out.png>`.
 import { chromium } from "@playwright/test";
 import { readFileSync } from "node:fs";
 

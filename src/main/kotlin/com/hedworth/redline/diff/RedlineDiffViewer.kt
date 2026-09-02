@@ -7,6 +7,7 @@ import com.intellij.diff.contents.DocumentContent
 import com.intellij.diff.requests.ContentDiffRequest
 import com.intellij.icons.AllIcons
 import com.intellij.ide.ActivityTracker
+import com.intellij.ide.ui.LafManagerListener
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.ActionManager
 import com.intellij.openapi.actionSystem.ActionUpdateThread
@@ -106,6 +107,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
             newBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark))
 
             panel.add(newBrowser.component, BorderLayout.CENTER)
+            followIdeTheme(newBrowser)
         } catch (t: Throwable) {
             // A JCEF failure after openSession must not leak the session (dispose() may never
             // run if init() throws before the viewer is registered anywhere).
@@ -146,6 +148,32 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
     }
 
     /**
+     * The shell's theme rides in the viewer URL, which is only read at load time — a LaF switch
+     * with a diff already open would otherwise leave light chrome on a dark IDE until the viewer
+     * is reopened. The shell keys its chrome off `html[data-theme]` (see viewer.ts#applyTheme),
+     * so re-stamping the attribute is the whole update; the reviewed document's canvas stays
+     * light by design either way.
+     *
+     * The connection is scoped to this viewer's disposable, so it unsubscribes with the pane.
+     */
+    private fun followIdeTheme(browser: JBCefBrowser) {
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            LafManagerListener.TOPIC,
+            LafManagerListener {
+                val nowDark = !JBColor.isBright()
+                if (nowDark == dark) return@LafManagerListener
+                dark = nowDark
+                val cef = browser.cefBrowser
+                cef.executeJavaScript(applyThemeJs(), cef.url, 0)
+            },
+        )
+    }
+
+    /** Re-stamps the shell's theme attribute; `viewer.ts#applyTheme` writes the same one. */
+    private fun applyThemeJs(): String =
+        "document.documentElement.dataset.theme = '${if (dark) "dark" else "light"}';"
+
+    /**
      * JS→Kotlin half of the toolbar wiring: the shell reports `"<blockCount>,<currentIndex>"`
      * whenever navigation state changes, which drives the actions' enablement.
      *
@@ -175,6 +203,10 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
                 override fun onLoadEnd(cefBrowser: CefBrowser?, frame: CefFrame?, httpStatusCode: Int) {
                     if (frame?.isMain == true) {
                         cefBrowser?.executeJavaScript(reportJs, cefBrowser.url, 0)
+                        // The theme rides in the URL, which was fixed at loadURL time: a LaF switch
+                        // between then and now would otherwise be lost (the page that received the
+                        // listener's update no longer exists).
+                        cefBrowser?.executeJavaScript(applyThemeJs(), cefBrowser.url, 0)
                     }
                 }
             },

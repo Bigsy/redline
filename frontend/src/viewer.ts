@@ -1,4 +1,10 @@
-import { buildRedline } from "./diff";
+import {
+  buildRedline,
+  DEFAULT_ENGINE_TIMEOUT_MS,
+  DiffCancelledError,
+  DiffTimeoutError,
+  type EngineOptions,
+} from "./diff";
 import { installMinimap } from "./minimap";
 
 /**
@@ -18,6 +24,22 @@ declare global {
     __redlineFlush?: () => void;
   }
 }
+
+/**
+ * Documents bigger than this (both sides together, in characters) skip the engine entirely.
+ *
+ * The engine is quadratic in token count: measured on a synthetic repetitive pair, 65 KB diffs in
+ * 1.2 s, 262 KB in 72 s, and 650 KB did not finish in 5 minutes. So this is a ceiling, not a
+ * promise — the time budget below is what actually protects the pane; this only avoids making the
+ * user wait 15 s to be told what was obvious from the size.
+ */
+const SIZE_LIMIT = 2_000_000;
+
+/**
+ * How long the engine may run before the "Computing redline…" banner appears. Most diffs finish
+ * in milliseconds; showing the banner immediately would flash it on every single one.
+ */
+const COMPUTING_BANNER_DELAY_MS = 250;
 
 let lastNavState = "0,-1";
 
@@ -43,7 +65,11 @@ function reportNavState(blockCount: number, current: number): void {
  *   2. marked changes           -> redline document; if the head or attributes ALSO changed
  *                                  invisibly, a banner says the highlights are incomplete
  *   3. changed, unrepresentable -> after side + warning banner pointing at the text diff
+ *                                  (or, for whitespace/line-ending-only edits, an info banner
+ *                                  saying the rendered document is unchanged)
  *   4. fetch/diff failure       -> after side + warning banner (never a blank pane)
+ *   5. too large / timed out /   -> after side + warning banner pointing at the text diff; the
+ *      cancelled                    document is intact, only the redline was abandoned
  * Additionally, if the reviewed document's own CSS collapses every marker to zero geometry, a
  * warning appears rather than an apparently unchanged page.
  */
@@ -71,13 +97,45 @@ function showBanner(kind: "info" | "warning", text: string): HTMLElement {
   return banner;
 }
 
+/**
+ * The "no redline for this one" message, shared by the size pre-check and the time budget: both
+ * mean the reviewed document is fine and only the comparison was abandoned.
+ */
+function tooLargeMessage(timeoutMs?: number): string {
+  const gaveUp = timeoutMs === undefined ? "" : ` (gave up after ${Math.round(timeoutMs / 1000)} s)`;
+  return (
+    `This document is too large for the rendered redline${gaveUp} — ` +
+    "showing the new version; use the text diff."
+  );
+}
+
+/** Info banner shown while the engine runs, carrying the Cancel control. */
+function showComputingBanner(onCancel: () => void): HTMLElement {
+  const banner = showBanner("info", "Computing redline… ");
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "redline-cancel";
+  cancel.textContent = "Cancel";
+  cancel.addEventListener("click", onCancel);
+  banner.appendChild(cancel);
+  return banner;
+}
+
 async function fetchSide(url: string): Promise<string> {
   const response = await fetch(url);
   if (!response.ok) throw new Error(`fetching ${url} failed: HTTP ${response.status}`);
   return response.text();
 }
 
-export async function bootSession(session: string): Promise<void> {
+/**
+ * `timeoutMs` is the engine time budget, set from the viewer URL's `?diffTimeoutMs=` (the e2e
+ * suite uses it to force the give-up state); `execute` is diff.ts's test seam, which [boot] never
+ * sets — the unit tests need it to reach the timeout and cancel states, because the inline engine
+ * they run against cannot be interrupted.
+ */
+export type BootOptions = Pick<EngineOptions, "timeoutMs" | "execute">;
+
+export async function bootSession(session: string, options: BootOptions = {}): Promise<void> {
   // Absolute base: the redline is written into an about:blank frame, whose base URL is inherited
   // and murky — relative URLs must not depend on it.
   const docBase = new URL(`/doc/${encodeURIComponent(session)}/`, window.location.href).href;
@@ -125,7 +183,47 @@ export async function bootSession(session: string): Promise<void> {
       return;
     }
 
-    const redline = buildRedline(before, after, docBase);
+    const timeoutMs = options.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
+    if (before.length + after.length > SIZE_LIMIT) {
+      // Nothing is lost by not trying: the engine would run for minutes and then be abandoned.
+      frame.src = afterUrl;
+      showBanner("warning", tooLargeMessage());
+      return;
+    }
+
+    // The engine runs in a worker, so the pane stays responsive — but the user still needs to
+    // know why nothing has appeared yet, and to be able to give up.
+    const cancellation = new AbortController();
+    let removeComputingBanner = (): void => {};
+    const computingTimer = setTimeout(() => {
+      const banner = showComputingBanner(() => cancellation.abort());
+      removeComputingBanner = () => banner.remove();
+    }, COMPUTING_BANNER_DELAY_MS);
+    let redline;
+    try {
+      redline = await buildRedline(before, after, docBase, {
+        timeoutMs,
+        signal: cancellation.signal,
+        execute: options.execute,
+      });
+    } catch (error) {
+      if (error instanceof DiffTimeoutError || error instanceof DiffCancelledError) {
+        // The redline was abandoned, not the document: show the new version and say which.
+        frame.src = afterUrl;
+        showBanner(
+          "warning",
+          error instanceof DiffTimeoutError
+            ? tooLargeMessage(error.timeoutMs)
+            : "Redline cancelled — showing the new version; use the text diff.",
+        );
+        return;
+      }
+      throw error;
+    } finally {
+      clearTimeout(computingTimer);
+      removeComputingBanner();
+    }
+
     const doc = frame.contentDocument;
     if (!doc) throw new Error("sandboxed frame document is not reachable");
     doc.open();
@@ -138,11 +236,20 @@ export async function bootSession(session: string): Promise<void> {
       // Showing the unmarked merge would falsely read as "no changes" — show the plain after
       // side and say so.
       frame.src = afterUrl;
-      showBanner(
-        "warning",
-        "The files differ, but the change is not visible in rendered form " +
-          "(e.g. attributes or <head> content) — showing the new version; use the text diff.",
-      );
+      if (redline.formattingOnly) {
+        // Whitespace/CRLF-only edits: nothing is missing from the rendered view, so the warning
+        // ("use the text diff") would send the reviewer looking for a change that isn't there.
+        showBanner(
+          "info",
+          "Only whitespace or line endings differ — the rendered document is unchanged.",
+        );
+      } else {
+        showBanner(
+          "warning",
+          "The files differ, but the change is not visible in rendered form " +
+            "(e.g. attributes or <head> content) — showing the new version; use the text diff.",
+        );
+      }
       return;
     }
 
@@ -201,7 +308,10 @@ export async function boot(): Promise<void> {
   applyTheme(params.get("theme"));
   const session = params.get("session");
   if (!session) throw new Error("no session parameter in viewer URL");
-  await bootSession(session);
+  const timeoutMs = Number(params.get("diffTimeoutMs"));
+  await bootSession(session, {
+    timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined,
+  });
 }
 
 export function renderFatal(error: unknown): void {

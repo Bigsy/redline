@@ -8,6 +8,7 @@ import com.intellij.diff.contents.DocumentContent
 import com.intellij.diff.contents.EmptyContent
 import com.intellij.diff.requests.ContentDiffRequest
 import com.intellij.diff.requests.DiffRequest
+import org.jetbrains.annotations.TestOnly
 
 /**
  * Offers a rendered redline view whenever both sides of a diff are HTML documents — or one side
@@ -24,7 +25,7 @@ class RedlineDiffTool : FrameDiffTool {
     override fun getName(): String = "Redline"
 
     override fun canShow(context: DiffContext, request: DiffRequest): Boolean {
-        if (!JcefSupport.isAvailable()) return false
+        if (!jcefAvailable()) return false
         val contents = (request as? ContentDiffRequest)?.contents ?: return false
         if (contents.size != 2) return false
         val htmlSides = contents.count { it is DocumentContent && isHtml(it) }
@@ -41,7 +42,22 @@ class RedlineDiffTool : FrameDiffTool {
             type.defaultExtension.lowercase() in HTML_EXTENSIONS
     }
 
-    private companion object {
-        val HTML_EXTENSIONS = setOf("html", "htm", "xhtml")
+    internal companion object {
+        private val HTML_EXTENSIONS = setOf("html", "htm", "xhtml")
+
+        private val DEFAULT_JCEF_PROBE: () -> Boolean = JcefSupport::isAvailable
+
+        /**
+         * The JCEF availability probe, indirected so [canShow] can be tested headlessly: a test
+         * JVM has no JCEF, so every case would otherwise collapse into "JCEF unavailable → false".
+         * Production code never assigns this.
+         */
+        @set:TestOnly
+        var jcefAvailable: () -> Boolean = DEFAULT_JCEF_PROBE
+
+        @TestOnly
+        fun resetJcefProbe() {
+            jcefAvailable = DEFAULT_JCEF_PROBE
+        }
     }
 }

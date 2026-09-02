@@ -1,5 +1,6 @@
 // Vendored engine (MIT) with the atomic-tag boundary patch — see vendor/htmldiff.js header.
 import htmldiff from "./vendor/htmldiff";
+import type { EngineRequest, EngineResponse } from "./diff.worker";
 
 /**
  * Atomic tags passed to node-htmldiff on EVERY call.
@@ -71,35 +72,179 @@ export interface RedlineResult {
    * from the redline (drop ins, unwrap del) and comparing with the real one.
    */
   bodyUnderReported: boolean;
+  /**
+   * The two sides differ only in whitespace or line endings that the renderer collapses away:
+   * the sanitized head and body markup are identical once whitespace runs are collapsed, AND no
+   * whitespace-preserving element changed at all. The rendered document is genuinely unchanged,
+   * so the zero-marker state is not under-reporting anything — it is the truth, and the shell
+   * says so with an info banner rather than a warning. (DOMParser has already normalised CRLF to
+   * LF, so collapsing whitespace covers line-ending-only changes too.)
+   */
+  formattingOnly: boolean;
+}
+
+/** The engine is given this long to finish before the run is abandoned (see [runEngine]). */
+export const DEFAULT_ENGINE_TIMEOUT_MS = 15_000;
+
+/** The engine ran past its time budget and the run was abandoned. */
+export class DiffTimeoutError extends Error {
+  constructor(readonly timeoutMs: number) {
+    super(`the redline engine did not finish within ${timeoutMs} ms`);
+    this.name = "DiffTimeoutError";
+  }
+}
+
+/** The caller aborted the run (the shell's Cancel button). */
+export class DiffCancelledError extends Error {
+  constructor() {
+    super("the redline was cancelled");
+    this.name = "DiffCancelledError";
+  }
+}
+
+/** A started engine run: its eventual merged body, and the only way to stop it. */
+export interface EngineRun {
+  result: Promise<string>;
+  terminate(): void;
+}
+
+export type EngineExecutor = (beforeBody: string, afterBody: string) => EngineRun;
+
+export interface EngineOptions {
+  /** Abandon the run after this long. Defaults to [DEFAULT_ENGINE_TIMEOUT_MS]. */
+  timeoutMs?: number;
+  /** Abort the run early (the shell's Cancel button). */
+  signal?: AbortSignal;
+  /** Test seam: run the engine some other way. Production always uses the default. */
+  execute?: EngineExecutor;
 }
 
 /**
- * Produce a single redline document from two full HTML documents: the after side's `<head>`
- * (styles resolve via the session's asset routes) with a merged body in which insertions and
- * deletions are wrapped in `<ins class="redline">` / `<del class="redline">`.
- *
- * The result carries truthfulness signals the viewer must surface: the engine cannot represent
- * head changes or attribute-only changes in the merged body, and those can coexist with marked
- * changes — zero markers is NOT the only under-reporting case.
- *
- * @param baseHref When given, injected as `<base href>` in `<head>` so the document's relative
- *   asset URLs resolve against the session's `/doc/<session>/` routes rather than the shell page.
- *
- * Scripts and refresh directives are stripped as defense-in-depth; the structural guarantees are
- * the shell's sandboxed iframe (no `allow-scripts`) plus the injected CSP and the Kotlin-side
- * navigation guard.
+ * Run the engine on the main thread. Used where there is no `Worker` (happy-dom in the unit
+ * tests) — the timeout cannot interrupt it there, since the engine never yields.
  */
-export function buildRedline(beforeHtml: string, afterHtml: string, baseHref?: string): RedlineResult {
+function runInline(beforeBody: string, afterBody: string): EngineRun {
+  return {
+    result: Promise.resolve().then(() => htmldiff(beforeBody, afterBody, "redline", null, ATOMIC_TAGS)),
+    terminate: () => {},
+  };
+}
+
+function runInWorker(beforeBody: string, afterBody: string): EngineRun {
+  // Vite emits the worker as its own chunk; `base: "./"` keeps the URL relative so it loads under
+  // http://redline.localhost/ (and from the Playwright dist route in e2e/sandbox.spec.ts).
+  const worker = new Worker(new URL("./diff.worker.ts", import.meta.url), { type: "module" });
+  const result = new Promise<string>((resolve, reject) => {
+    worker.addEventListener("message", (event: MessageEvent<EngineResponse>) => {
+      worker.terminate();
+      if ("error" in event.data) reject(new Error(event.data.error));
+      else resolve(event.data.html);
+    });
+    worker.addEventListener("error", (event) => {
+      worker.terminate();
+      reject(new Error(event.message || "the redline worker failed"));
+    });
+    const request: EngineRequest = {
+      before: beforeBody,
+      after: afterBody,
+      className: "redline",
+      atomicTags: ATOMIC_TAGS,
+    };
+    worker.postMessage(request);
+  });
+  return { result, terminate: () => worker.terminate() };
+}
+
+const defaultExecutor: EngineExecutor = (beforeBody, afterBody) => {
+  if (typeof Worker === "undefined") return runInline(beforeBody, afterBody);
+  try {
+    return runInWorker(beforeBody, afterBody);
+  } catch {
+    // A worker that cannot even be constructed (blocked, or a stripped-down runtime) must not
+    // cost the redline: fall back to the main thread and let the time budget do its job.
+    return runInline(beforeBody, afterBody);
+  }
+};
+
+/**
+ * The engine step, with a time budget and a cancel path.
+ *
+ * `htmldiff` is quadratic in token count, so a big document can run for minutes; on the main
+ * thread that is an unresponsive pane with no way out. Terminating the worker is the only way to
+ * stop a run in progress, which is why timeout and cancel both go through [EngineRun.terminate].
+ */
+export function runEngine(
+  beforeBody: string,
+  afterBody: string,
+  options: EngineOptions = {},
+): Promise<string> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
+  const signal = options.signal;
+  const run = (options.execute ?? defaultExecutor)(beforeBody, afterBody);
+
+  return new Promise<string>((resolve, reject) => {
+    let settled = false;
+    const settle = (action: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      action();
+    };
+    const onAbort = (): void => {
+      run.terminate();
+      settle(() => reject(new DiffCancelledError()));
+    };
+    const timer = setTimeout(() => {
+      run.terminate();
+      settle(() => reject(new DiffTimeoutError(timeoutMs)));
+    }, timeoutMs);
+
+    run.result.then(
+      (html) => settle(() => resolve(html)),
+      (error) => settle(() => reject(error)),
+    );
+
+    if (signal?.aborted) onAbort();
+    else signal?.addEventListener("abort", onAbort);
+  });
+}
+
+interface PreparedSides {
+  before: Document;
+  after: Document;
+  beforeBody: string;
+  afterBody: string;
+  headDiffers: boolean;
+  formattingOnly: boolean;
+}
+
+/** Parse and sanitize both sides. Stays on the main thread: workers have no DOMParser. */
+function prepareSides(beforeHtml: string, afterHtml: string): PreparedSides {
   const parser = new DOMParser();
   const before = parser.parseFromString(beforeHtml, "text/html");
   const after = parser.parseFromString(afterHtml, "text/html");
   sanitizeReviewedDocument(before);
   sanitizeReviewedDocument(after);
 
-  const headDiffers = before.head.innerHTML !== after.head.innerHTML;
   const beforeBody = before.body.innerHTML;
+  const afterBody = after.body.innerHTML;
+  return {
+    before,
+    after,
+    beforeBody,
+    afterBody,
+    headDiffers: before.head.innerHTML !== after.head.innerHTML,
+    formattingOnly:
+      collapseWhitespace(before.head.innerHTML) === collapseWhitespace(after.head.innerHTML) &&
+      collapseWhitespace(beforeBody) === collapseWhitespace(afterBody) &&
+      preformattedMarkup(before) === preformattedMarkup(after),
+  };
+}
 
-  const redlineBody = htmldiff(beforeBody, after.body.innerHTML, "redline", null, ATOMIC_TAGS);
+/** Everything after the engine call: the merged document plus its truthfulness signals. */
+function assembleRedline(sides: PreparedSides, redlineBody: string, baseHref?: string): RedlineResult {
+  const { before, after, beforeBody, headDiffers, formattingOnly } = sides;
 
   after.body.innerHTML = redlineBody;
   const markerCount = after.body.querySelectorAll("ins.redline, del.redline, [data-diff-node]").length;
@@ -126,12 +271,65 @@ export function buildRedline(beforeHtml: string, afterHtml: string, baseHref?: s
     markerCount,
     headDiffers,
     bodyUnderReported,
+    formattingOnly,
   };
 }
 
+/**
+ * Produce a single redline document from two full HTML documents: the after side's `<head>`
+ * (styles resolve via the session's asset routes) with a merged body in which insertions and
+ * deletions are wrapped in `<ins class="redline">` / `<del class="redline">`.
+ *
+ * The result carries truthfulness signals the viewer must surface: the engine cannot represent
+ * head changes or attribute-only changes in the merged body, and those can coexist with marked
+ * changes — zero markers is NOT the only under-reporting case.
+ *
+ * Asynchronous because the engine step runs in a worker: it is the one part that can leave the
+ * main thread, and it is the part that can take minutes. It rejects with [DiffTimeoutError] or
+ * [DiffCancelledError] if the run is abandoned — both mean "no redline", not "no changes", and
+ * the shell must say so.
+ *
+ * @param baseHref When given, injected as `<base href>` in `<head>` so the document's relative
+ *   asset URLs resolve against the session's `/doc/<session>/` routes rather than the shell page.
+ *
+ * Scripts and refresh directives are stripped as defense-in-depth; the structural guarantees are
+ * the shell's sandboxed iframe (no `allow-scripts`) plus the injected CSP and the Kotlin-side
+ * navigation guard.
+ */
+export async function buildRedline(
+  beforeHtml: string,
+  afterHtml: string,
+  baseHref?: string,
+  options: EngineOptions = {},
+): Promise<RedlineResult> {
+  const sides = prepareSides(beforeHtml, afterHtml);
+  const redlineBody = await runEngine(sides.beforeBody, sides.afterBody, options);
+  return assembleRedline(sides, redlineBody, baseHref);
+}
+
+/** Whitespace runs are invisible when rendered; collapse them before comparing two markups. */
+function collapseWhitespace(html: string): string {
+  return html.replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Elements that render their whitespace verbatim — inside them a reindent is a REAL, visible
+ * change, so [collapseWhitespace] must not be allowed to declare it invisible. Compared exactly.
+ *
+ * Residual risk, accepted: whitespace preservation applied by a stylesheet rule (`p { white-space:
+ * pre }`) is invisible to this check — only the elements that preserve whitespace by default and
+ * inline `style` attributes mentioning `white-space` are caught. The cost of a miss is an info
+ * banner where a warning was due, on a document that also produced zero markers.
+ */
+const PREFORMATTED_SELECTOR = "pre, textarea, xmp, listing, plaintext, [style*='white-space']";
+
+function preformattedMarkup(doc: Document): string {
+  return [...doc.body.querySelectorAll(PREFORMATTED_SELECTOR)].map((el) => el.outerHTML).join("\u0000");
+}
+
 /** Back-compat/test convenience: just the merged document. */
-export function diffHtml(beforeHtml: string, afterHtml: string, baseHref?: string): string {
-  return buildRedline(beforeHtml, afterHtml, baseHref).html;
+export async function diffHtml(beforeHtml: string, afterHtml: string, baseHref?: string): Promise<string> {
+  return (await buildRedline(beforeHtml, afterHtml, baseHref)).html;
 }
 
 /**

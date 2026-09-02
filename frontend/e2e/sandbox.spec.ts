@@ -135,6 +135,43 @@ test("javascript: links in the redline are dead", async ({ page }) => {
   expect(page.url()).toBe(VIEWER_URL);
 });
 
+test("the redline is computed in a worker and still produces markers", async ({ page }) => {
+  const workerRequests: string[] = [];
+  page.on("request", (request) => {
+    if (/diff\.worker.*\.js$/.test(new URL(request.url()).pathname)) workerRequests.push(request.url());
+  });
+  const external = await serveSession(page, {
+    before: doc("", "<p>old text</p>"),
+    after: doc("", "<p>new text</p>"),
+  });
+
+  await page.goto(VIEWER_URL);
+  await expect(page.frameLocator("iframe.redline-frame").locator("ins.redline")).toHaveCount(1);
+  // The engine chunk must actually load from the bundle — a silent fallback to the main thread
+  // would still pass every assertion above while leaving the freeze this batch exists to fix.
+  expect(workerRequests).toHaveLength(1);
+  expect(external).toEqual([]);
+});
+
+test("a document that outruns the time budget shows the give-up banner and the new version", async ({ page }) => {
+  // ~22 KB per side of repetitive markup — measured at ~5 s of engine time, against a 50 ms
+  // budget. (Repetitive markup is the engine's worst case; this is the cliff batch B exists for.)
+  const paragraphs = (marker: string) =>
+    Array.from({ length: 400 }, (_, i) => `<p><b>row ${i}</b> <a href="#x">${marker} ${i}</a> filler text</p>`).join("");
+  const external = await serveSession(page, {
+    before: doc("", paragraphs("old")),
+    after: doc("", paragraphs("new")),
+  });
+
+  await page.goto(`${VIEWER_URL}&diffTimeoutMs=50`);
+  await expect(page.locator(".redline-banner.warning")).toContainText("too large for the rendered redline");
+  await expect(page.locator(".redline-banner.warning")).toContainText("gave up after");
+  // The document itself is intact: the frame shows the raw after side, not a blank pane.
+  await expect(page.frameLocator("iframe.redline-frame").locator("p").first()).toContainText("new 0");
+  await expect(page.locator(".redline-cancel")).toHaveCount(0);
+  expect(external).toEqual([]);
+});
+
 test("with real layout: minimap plots ticks and the toolbar bridge reports and navigates blocks", async ({ page }) => {
   // Stand in for the Kotlin-injected JBCefJSQuery bridge and collect the shell's reports.
   await page.addInitScript(() => {
