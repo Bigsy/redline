@@ -49,9 +49,9 @@ frontend/playwright-report/
 # Built viewer bundle is generated into resources by the frontend build:
 src/main/resources/web/
 
-# Local-only corpus slot: real customer documents may be placed here for manual testing and
-# must never be committed. The committed synthetic corpus lives in testdata/mock/.
-testdata/tie/
+# Output of testdata/large/generate.mjs (a large synthetic HTML pair for manually exercising the
+# size guard, PLAN.md item B5). Regenerate locally; not worth committing multi-hundred-KB fixtures.
+testdata/large/generated/
 
 # Local agent/working notes. These are personal scratch documents, not project docs — listed
 # here (not only in a personal global ignore) so a fresh clone or CI checkout can't commit them.
