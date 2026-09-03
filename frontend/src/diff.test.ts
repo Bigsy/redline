@@ -388,6 +388,26 @@ describe("engine time budget (a big document must not freeze the pane)", () => {
     expect(merged).toContain("new");
   });
 
+  it("partitions a large aligned document so sparse edits finish inside the normal budget", async () => {
+    const paragraphs = 700;
+    const makeBody = (edited: boolean): string =>
+      Array.from({ length: paragraphs }, (_, i) => {
+        const text = edited && i % 50 === 0
+          ? `Paragraph ${i} was edited to exercise the large document fast path.`
+          : `Paragraph ${i} is unchanged synthetic prose with enough content to make the whole document large.`;
+        return `<p>${text} <b>Bold segment ${i}</b> and <a href="#s${i}">link ${i}</a>.</p>\n`;
+      }).join("");
+
+    const result = await buildRedline(doc(makeBody(false)), doc(makeBody(true)));
+    const rendered = new DOMParser().parseFromString(result.html, "text/html");
+
+    expect(result.markerCount).toBeGreaterThanOrEqual(Math.ceil(paragraphs / 50) * 2);
+    expect(result.bodyUnderReported).toBe(false);
+    expect(
+      rendered.body.querySelectorAll("p")[650].querySelector("ins.redline")?.textContent,
+    ).toContain("was edited");
+  });
+
   it("rejects with DiffTimeoutError once the budget is spent, and stops the run", async () => {
     const engine = stalledEngine();
     await expect(runEngine("a", "b", { timeoutMs: 5, execute: engine.execute })).rejects.toBeInstanceOf(

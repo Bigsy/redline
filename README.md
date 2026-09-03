@@ -73,9 +73,10 @@ in `frontend/`, bundled into `src/main/resources/web/` at build time) computes t
 redline with [node-htmldiff](https://www.npmjs.com/package/node-htmldiff) (MIT) and renders
 it into a sandboxed iframe.
 
-The comparison itself runs in a Web Worker, so the pane stays responsive on large documents;
-if it outruns its 15-second budget (or the pair is over 2 MB) Redline shows the new version
-with a banner instead of freezing, and you can cancel a slow comparison while it runs.
+The comparison itself runs in a Web Worker, and large documents with many aligned, unchanged
+blocks are partitioned so only the edited blocks enter the expensive matcher. If a comparison
+still outruns its 15-second budget (or the pair is over 2 MB) Redline shows the new version with a
+banner instead of freezing, and you can cancel a slow comparison while it runs.
 
 When a side of the diff is a live document, edits to it are pushed into the open session and the
 shell re-renders in place — no page reload, so your scroll position survives.

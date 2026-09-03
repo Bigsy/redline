@@ -186,6 +186,32 @@ test("the redline is computed in a worker and still produces markers", async ({ 
   expect(external).toEqual([]);
 });
 
+test("the generated 970 KB sparse-edit pair renders within the normal engine budget", async ({ page }) => {
+  // Keep this in lockstep with testdata/large/generate.mjs. This used to hit the 15-second guard:
+  // the global token matcher considered thousands of identical sibling/tag candidates, even
+  // though only one paragraph in every 50 changed.
+  const paragraphs = (edited: boolean) =>
+    Array.from({ length: 6000 }, (_, i) => {
+      const text = edited && i % 50 === 0
+        ? `This paragraph number ${i} has been edited to exercise the size guard.`
+        : `This is paragraph number ${i} of a large synthetic document used for manual testing.`;
+      return `<p>${text} <b>Bold segment ${i}</b> and <a href="#s${i}">a link to section ${i}</a>.</p>\n`;
+    }).join("");
+  const external = await serveSession(page, {
+    before: doc("<title>Large synthetic document</title>", paragraphs(false)),
+    after: doc("<title>Large synthetic document</title>", paragraphs(true)),
+  });
+
+  await page.goto(VIEWER_URL);
+  const framed = page.frameLocator("iframe.redline-frame");
+  await expect(framed.locator("ins.redline").first()).toBeAttached();
+  await expect(framed.locator("p").nth(5950).locator("ins.redline").first()).toContainText(
+    "has been edited",
+  );
+  await expect(page.locator(".redline-banner.warning")).toHaveCount(0);
+  expect(external).toEqual([]);
+});
+
 test("a document that outruns the time budget shows the give-up banner and the new version", async ({ page }) => {
   // ~22 KB per side of repetitive markup — measured at ~5 s of engine time, against a 50 ms
   // budget. (Repetitive markup is the engine's worst case; this is the cliff batch B exists for.)

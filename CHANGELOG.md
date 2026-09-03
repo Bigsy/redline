@@ -29,6 +29,9 @@ All notable changes to Redline are documented here. The format follows
 
 ### Changed
 
+- Large, structurally stable documents with sparse edits render much faster by passing unchanged
+  sibling blocks through and diffing only the edited blocks; the synthetic ~970 KB-per-side test
+  corpus now completes within the normal 15-second budget.
 - Whitespace- and line-ending-only edits are called out as such ("Only whitespace or line endings
   differ — the rendered document is unchanged") instead of the misleading "not visible in rendered
   form … use the text diff" warning.

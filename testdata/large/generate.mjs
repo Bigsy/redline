@@ -1,7 +1,7 @@
-// Generates a large, purely synthetic HTML pair for manually exercising the size guard
-// (PLAN.md item B5): the engine is quadratic in token count, so the pane needs a way to prove it
-// stays responsive, shows the "Computing redline..." banner with a working Cancel, and gives up
-// cleanly past its time budget. Repetitive markup is deliberately the worst case for the engine.
+// Generates a large, purely synthetic HTML pair for manually exercising large-document rendering
+// (PLAN.md item B5): the engine is quadratic in token count, and repetitive markup is deliberately
+// its worst case. Sparse, aligned edits in this fixture should take the partitioned fast path and
+// render normally; the 15-second guard remains the fallback for shapes that cannot be partitioned.
 //
 // Not part of any build or test suite — run it by hand and point runIde at the output:
 //   node generate.mjs [paragraphCount]

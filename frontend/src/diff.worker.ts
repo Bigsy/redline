@@ -9,12 +9,20 @@
 // the only way to stop the engine mid-run.
 import htmldiff from "./vendor/htmldiff";
 
-export interface EngineRequest {
-  before: string;
-  after: string;
+interface EngineRequestBase {
   className: string;
   atomicTags: string;
 }
+
+/** One aligned body region; equal regions pass through without invoking node-htmldiff. */
+export interface EngineChunk {
+  before: string;
+  after: string;
+}
+
+/** A whole-body comparison, or the conservative large-document partitioned form. */
+export type EngineRequest = EngineRequestBase &
+  ({ before: string; after: string } | { chunks: EngineChunk[] });
 
 export type EngineResponse = { html: string } | { error: string };
 
@@ -26,9 +34,19 @@ const ctx = self as unknown as {
 };
 
 ctx.addEventListener("message", (event) => {
-  const { before, after, className, atomicTags } = event.data;
+  const { className, atomicTags } = event.data;
   try {
-    ctx.postMessage({ html: htmldiff(before, after, className, null, atomicTags) });
+    const inputs = "chunks" in event.data
+      ? event.data.chunks
+      : [{ before: event.data.before, after: event.data.after }];
+    const html = inputs
+      .map((chunk) =>
+        chunk.before === chunk.after
+          ? chunk.after
+          : htmldiff(chunk.before, chunk.after, className, null, atomicTags),
+      )
+      .join("");
+    ctx.postMessage({ html });
   } catch (error) {
     ctx.postMessage({ error: error instanceof Error ? error.message : String(error) });
   }

@@ -1,6 +1,6 @@
 // Vendored engine (MIT) with the atomic-tag boundary patch — see vendor/htmldiff.js header.
 import htmldiff from "./vendor/htmldiff";
-import type { EngineRequest, EngineResponse } from "./diff.worker";
+import type { EngineChunk, EngineRequest, EngineResponse } from "./diff.worker";
 
 /**
  * Atomic tags passed to node-htmldiff on EVERY call.
@@ -142,7 +142,11 @@ export interface EngineRun {
   terminate(): void;
 }
 
-export type EngineExecutor = (beforeBody: string, afterBody: string) => EngineRun;
+export type EngineExecutor = (
+  beforeBody: string,
+  afterBody: string,
+  chunks?: readonly EngineChunk[],
+) => EngineRun;
 
 export interface EngineOptions {
   /** Abandon the run after this long. Defaults to [DEFAULT_ENGINE_TIMEOUT_MS]. */
@@ -157,14 +161,30 @@ export interface EngineOptions {
  * Run the engine on the main thread. Used where there is no `Worker` (happy-dom in the unit
  * tests) — the timeout cannot interrupt it there, since the engine never yields.
  */
-function runInline(beforeBody: string, afterBody: string): EngineRun {
+function runInline(
+  beforeBody: string,
+  afterBody: string,
+  chunks?: readonly EngineChunk[],
+): EngineRun {
   return {
-    result: Promise.resolve().then(() => htmldiff(beforeBody, afterBody, "redline", null, ATOMIC_TAGS)),
+    result: Promise.resolve().then(() =>
+      (chunks ?? [{ before: beforeBody, after: afterBody }])
+        .map((chunk) =>
+          chunk.before === chunk.after
+            ? chunk.after
+            : htmldiff(chunk.before, chunk.after, "redline", null, ATOMIC_TAGS),
+        )
+        .join(""),
+    ),
     terminate: () => {},
   };
 }
 
-function runInWorker(beforeBody: string, afterBody: string): EngineRun {
+function runInWorker(
+  beforeBody: string,
+  afterBody: string,
+  chunks?: readonly EngineChunk[],
+): EngineRun {
   // Vite emits the worker as its own chunk; `base: "./"` keeps the URL relative so it loads under
   // http://redline.localhost/ (and from the Playwright dist route in e2e/sandbox.spec.ts).
   const worker = new Worker(new URL("./diff.worker.ts", import.meta.url), { type: "module" });
@@ -178,25 +198,22 @@ function runInWorker(beforeBody: string, afterBody: string): EngineRun {
       worker.terminate();
       reject(new Error(event.message || "the redline worker failed"));
     });
-    const request: EngineRequest = {
-      before: beforeBody,
-      after: afterBody,
-      className: "redline",
-      atomicTags: ATOMIC_TAGS,
-    };
+    const request: EngineRequest = chunks
+      ? { chunks: [...chunks], className: "redline", atomicTags: ATOMIC_TAGS }
+      : { before: beforeBody, after: afterBody, className: "redline", atomicTags: ATOMIC_TAGS };
     worker.postMessage(request);
   });
   return { result, terminate: () => worker.terminate() };
 }
 
-const defaultExecutor: EngineExecutor = (beforeBody, afterBody) => {
-  if (typeof Worker === "undefined") return runInline(beforeBody, afterBody);
+const defaultExecutor: EngineExecutor = (beforeBody, afterBody, chunks) => {
+  if (typeof Worker === "undefined") return runInline(beforeBody, afterBody, chunks);
   try {
-    return runInWorker(beforeBody, afterBody);
+    return runInWorker(beforeBody, afterBody, chunks);
   } catch {
     // A worker that cannot even be constructed (blocked, or a stripped-down runtime) must not
     // cost the redline: fall back to the main thread and let the time budget do its job.
-    return runInline(beforeBody, afterBody);
+    return runInline(beforeBody, afterBody, chunks);
   }
 };
 
@@ -211,10 +228,13 @@ export function runEngine(
   beforeBody: string,
   afterBody: string,
   options: EngineOptions = {},
+  chunks?: readonly EngineChunk[],
 ): Promise<string> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
   const signal = options.signal;
-  const run = (options.execute ?? defaultExecutor)(beforeBody, afterBody);
+  // Existing test/custom executors can ignore the optional third argument. Production's executor
+  // uses it for the large-document fast path.
+  const run = (options.execute ?? defaultExecutor)(beforeBody, afterBody, chunks);
 
   return new Promise<string>((resolve, reject) => {
     let settled = false;
@@ -251,6 +271,69 @@ interface PreparedSides {
   afterBody: string;
   headDiffers: boolean;
   formattingOnly: boolean;
+  engineChunks?: EngineChunk[];
+}
+
+/**
+ * Above this size, try the conservative aligned-sibling fast path.
+ *
+ * node-htmldiff searches globally for matching tokens. A long document made from thousands of
+ * mostly unchanged sibling blocks therefore spends nearly all its time considering identical
+ * tag/whitespace tokens at unrelated positions. When both bodies retain the exact same top-level
+ * node shape, each corresponding node is an independent comparison boundary: unchanged nodes can
+ * pass straight through and only edited nodes need the quadratic engine. If the shape differs at
+ * all (inserted/deleted/retyped nodes), return undefined and preserve the original whole-body
+ * algorithm.
+ */
+const ALIGNED_CHUNK_THRESHOLD = 100_000;
+
+function serializeBodyNode(node: ChildNode): string {
+  if (node.nodeType === Node.ELEMENT_NODE) return (node as Element).outerHTML;
+  // textContent is not an HTML serialization (`&amp;copy;` would become `&copy;` and then parse as
+  // © when the merged body is assigned). A detached container gives the browser's exact escaping.
+  const container = node.ownerDocument!.createElement("div");
+  container.appendChild(node.cloneNode(true));
+  return container.innerHTML;
+}
+
+function alignedBodyChunks(before: HTMLElement, after: HTMLElement): EngineChunk[] | undefined {
+  if (before.innerHTML.length + after.innerHTML.length < ALIGNED_CHUNK_THRESHOLD) return undefined;
+
+  const beforeNodes = [...before.childNodes];
+  const afterNodes = [...after.childNodes];
+  if (beforeNodes.length < 2 || beforeNodes.length !== afterNodes.length) return undefined;
+
+  for (let i = 0; i < beforeNodes.length; i++) {
+    const left = beforeNodes[i];
+    const right = afterNodes[i];
+    if (left.nodeType !== right.nodeType || left.nodeName !== right.nodeName) return undefined;
+  }
+
+  const serialized = beforeNodes.map((node, index) => ({
+    before: serializeBodyNode(node),
+    after: serializeBodyNode(afterNodes[index]),
+  }));
+  const equalCharacters = serialized.reduce(
+    (total, chunk) => total + (chunk.before === chunk.after ? chunk.after.length : 0),
+    0,
+  );
+  // Positional partitioning is intended for sparse edits, not a body whose same-named siblings
+  // were broadly inserted, deleted or moved. Keep the mature global matcher for that case.
+  if (equalCharacters / Math.max(before.innerHTML.length, after.innerHTML.length) < 0.8) return undefined;
+
+  const chunks: EngineChunk[] = [];
+  for (const chunk of serialized) {
+    const previous = chunks.at(-1);
+    // Keep changed nodes isolated, but collapse long unchanged sibling runs. This reduces the
+    // generated 6,000-paragraph fixture from 12,001 structured-cloned objects to about 240.
+    if (chunk.before === chunk.after && previous && previous.before === previous.after) {
+      previous.before += chunk.before;
+      previous.after += chunk.after;
+    } else {
+      chunks.push(chunk);
+    }
+  }
+  return chunks;
 }
 
 /** Parse and sanitize both sides. Stays on the main thread: workers have no DOMParser. */
@@ -273,6 +356,7 @@ function prepareSides(beforeHtml: string, afterHtml: string): PreparedSides {
       collapseWhitespace(before.head.innerHTML) === collapseWhitespace(after.head.innerHTML) &&
       collapseWhitespace(beforeBody) === collapseWhitespace(afterBody) &&
       preformattedMarkup(before) === preformattedMarkup(after),
+    engineChunks: alignedBodyChunks(before.body, after.body),
   };
 }
 
@@ -337,7 +421,7 @@ export async function buildRedline(
   options: EngineOptions = {},
 ): Promise<RedlineResult> {
   const sides = prepareSides(beforeHtml, afterHtml);
-  const redlineBody = await runEngine(sides.beforeBody, sides.afterBody, options);
+  const redlineBody = await runEngine(sides.beforeBody, sides.afterBody, options, sides.engineChunks);
   return assembleRedline(sides, redlineBody, baseHref);
 }
 
