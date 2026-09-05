@@ -1,0 +1,492 @@
+{
+  "package": {
+    "verifiedAt": "2026-09-05T15:32:41.320Z",
+    "name": "redline-engine",
+    "version": "0.1.0",
+    "publishedAt": "2026-09-05T15:32:21.798Z",
+    "registry": "https://registry.npmjs.org/",
+    "url": "https://www.npmjs.com/package/redline-engine",
+    "tarball": "https://registry.npmjs.org/redline-engine/-/redline-engine-0.1.0.tgz",
+    "integrity": "sha512-WUAF3L6zVCmf9PhRsQ+ou+FLlCy5tOOiovGS6J8cusO1TLO0MurJTgWpZaZ65xQdkBN/NdHbvHf+pMxVAXKlbg==",
+    "shasum": "87dd8b0248d11738eca71ab83a858516eafb436d",
+    "latest": "0.1.0",
+    "sourceCommit": "deaa0be",
+    "matchesTestedArtifact": true,
+    "freshRegistryInstall": "passed"
+  },
+  "artifactVerification": {
+    "registryIntegrityMatches": true,
+    "localBuildFilesCompared": 30,
+    "differingFiles": 0
+  },
+  "tests": {
+    "engine-unit": {
+      "total": 40,
+      "passed": 40,
+      "failed": 0,
+      "pending": 0,
+      "failures": []
+    },
+    "engine-compatibility": {
+      "total": 317,
+      "passed": 317,
+      "failed": 0,
+      "pending": 0,
+      "failures": []
+    },
+    "upstream-baseline": {
+      "total": 87,
+      "passed": 87,
+      "failed": 0,
+      "pending": 0,
+      "failures": []
+    },
+    "plugin-baseline": {
+      "total": 118,
+      "passed": 118,
+      "failed": 0,
+      "pending": 0,
+      "failures": []
+    },
+    "plugin-substitution": {
+      "total": 118,
+      "passed": 103,
+      "failed": 15,
+      "pending": 0,
+      "failures": [
+        "mock corpus transaction guide: renumbered TOC and table changes are marked, not swallowed",
+        "atomic-tag boundary regressions still treats real atomic tags as single tokens",
+        "sanitization (defense-in-depth behind the sandbox) a document that fakes a deletion gets no marker and no incomplete-highlights warning",
+        "under-reporting detection (mixed changes must not be silent) flags attribute-only changes (zero markers)",
+        "under-reporting detection (mixed changes must not be silent) does not flag added block elements (engine annotates the tag instead of wrapping)",
+        "under-reporting detection (mixed changes must not be silent) does not flag removed block elements",
+        "under-reporting detection (mixed changes must not be silent) an unmarkable bare-void insertion (<hr>) surfaces via the zero-marker state, unflagged",
+        "formatting-only detection (whitespace/CRLF edits are not under-reporting) flags reindentation (whitespace runs resized)",
+        "formatting-only detection (whitespace/CRLF edits are not under-reporting) does not flag reindented <pre> content (whitespace there is rendered verbatim)",
+        "formatting-only detection (whitespace/CRLF edits are not under-reporting) does not flag attribute-only changes",
+        "engine time budget (a big document must not freeze the pane) partitions a large aligned document so sparse edits finish inside the normal budget",
+        "viewer truthfulness states state 3 \u2014 changed but unrepresentable: warning banner and the after side",
+        "viewer truthfulness states state 3 \u2014 whitespace-only change: info banner saying the rendered document is unchanged",
+        "viewer truthfulness states state 2 with invisible extras \u2014 marked changes plus attribute change: incomplete-highlights banner",
+        "live refresh keeps the reader's place when a reload lands while the previous render is still fetching"
+      ]
+    },
+    "plugin-e2e": {
+      "stats": {
+        "startTime": "2026-09-05T16:06:18.685Z",
+        "duration": 7646.111000000001,
+        "expected": 16,
+        "skipped": 0,
+        "unexpected": 2,
+        "flaky": 0
+      },
+      "failures": [
+        "the generated 970 KB sparse-edit pair renders within the normal engine budget",
+        "a reviewed stylesheet cannot empty a view mode in silence"
+      ]
+    },
+    "plugin-baseline-e2e": {
+      "stats": {
+        "startTime": "2026-09-05T16:10:38.115Z",
+        "duration": 2964.836,
+        "expected": 18,
+        "skipped": 0,
+        "unexpected": 0,
+        "flaky": 0
+      },
+      "failures": []
+    },
+    "plugin-probes": {
+      "stats": {
+        "startTime": "2026-09-05T16:08:00.679Z",
+        "duration": 6681.531,
+        "expected": 0,
+        "skipped": 0,
+        "unexpected": 4,
+        "flaky": 0
+      },
+      "failures": [
+        "audit: Original hides inserted structural list items",
+        "audit: Final hides deleted structural list items",
+        "audit: formatting-only change remains navigable",
+        "audit: host sanitizes new reserved marker namespace"
+      ]
+    },
+    "engine-browser": {
+      "passed": 25,
+      "failed": 0,
+      "note": "Public entry imports redirected to published artifact; parser internal unit checks use matching local source."
+    }
+  },
+  "nodeBenchmark": {
+    "date": "2026-09-05T16:07:44.083Z",
+    "hardware": {
+      "cpu": "Apple M1 Max",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "node": "v26.0.0",
+    "sourceFiles": {
+      "before": {
+        "path": "testdata/large/generated/before.html",
+        "units": 991677,
+        "utf8Bytes": 991677,
+        "sha256": "57707daadc66dd86f8c062c450fa45c0cf19a2c8f2679ed8c3916b406c6e8a90"
+      },
+      "after": {
+        "path": "testdata/large/generated/after.html",
+        "units": 989997,
+        "utf8Bytes": 989997,
+        "sha256": "f3983b9e9c2ffd2b8badc28c9213b245677fedf1b490d3f9276980ab0467eba3"
+      }
+    },
+    "legacySha256": "5f470f7e7e966a7d9ab1af751790df85694175281220a6fd46a1694866cf9a22",
+    "method": "Existing files read directly from sibling. Body extraction outside timing. Fresh processes, 15s cutoff includes startup; elapsed excludes module loading. Three completed samples except raw legacy (one); stop repeats on timeout. Plugin shortcut uses actual sibling function extracted/transpiled unchanged, with happy-dom parsing; not JCEF or full viewer timing. Structural includes both-side validation; legacy does not.",
+    "rows": [
+      {
+        "fixture": "existing-6000-paragraph-pair",
+        "engine": "structural",
+        "combinedUnits": 1981444,
+        "runs": [
+          {
+            "elapsedMs": 636.158917,
+            "maxRssKiB": 220544,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 230.38879199999997,
+              "matchMs": 139.24962500000004,
+              "renderMs": 5.305416999999977,
+              "validateMs": 260.610291,
+              "totalMs": 635.554125
+            },
+            "outputUnits": 1201809,
+            "coarseReplacements": 0
+          },
+          {
+            "elapsedMs": 654.644417,
+            "maxRssKiB": 226064,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 292.769416,
+              "matchMs": 137.26658400000008,
+              "renderMs": 5.492040999999972,
+              "validateMs": 218.52483399999994,
+              "totalMs": 654.052875
+            },
+            "outputUnits": 1201809,
+            "coarseReplacements": 0
+          },
+          {
+            "elapsedMs": 482.06579199999993,
+            "maxRssKiB": 226080,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 211.37870800000002,
+              "matchMs": 106.27966699999996,
+              "renderMs": 2.9247080000000096,
+              "validateMs": 160.89020900000003,
+              "totalMs": 481.473292
+            },
+            "outputUnits": 1201809,
+            "coarseReplacements": 0
+          }
+        ]
+      },
+      {
+        "fixture": "existing-6000-paragraph-pair",
+        "engine": "legacy-raw",
+        "combinedUnits": 1981444,
+        "runs": [
+          {
+            "outcome": "timeout",
+            "cutoffMs": 15000
+          }
+        ]
+      },
+      {
+        "fixture": "existing-6000-paragraph-pair",
+        "engine": "plugin-shortcut",
+        "combinedUnits": 1981444,
+        "runs": [
+          {
+            "elapsedMs": 473.725416,
+            "maxRssKiB": 646864,
+            "outcome": "rendered",
+            "shortcutUsed": true,
+            "chunks": 241,
+            "outputUnits": 1015442
+          },
+          {
+            "elapsedMs": 465.944208,
+            "maxRssKiB": 645792,
+            "outcome": "rendered",
+            "shortcutUsed": true,
+            "chunks": 241,
+            "outputUnits": 1015442
+          },
+          {
+            "elapsedMs": 512.831792,
+            "maxRssKiB": 647360,
+            "outcome": "rendered",
+            "shortcutUsed": true,
+            "chunks": 241,
+            "outputUnits": 1015442
+          }
+        ]
+      },
+      {
+        "fixture": "same-pair-with-wrapper",
+        "engine": "structural",
+        "combinedUnits": 1981482,
+        "runs": [
+          {
+            "elapsedMs": 486.963417,
+            "maxRssKiB": 225920,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 209.888083,
+              "matchMs": 112.18649999999997,
+              "renderMs": 3.3700830000000224,
+              "validateMs": 160.914625,
+              "totalMs": 486.359291
+            },
+            "outputUnits": 1201829,
+            "coarseReplacements": 0
+          },
+          {
+            "elapsedMs": 491.926375,
+            "maxRssKiB": 229984,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 220.820209,
+              "matchMs": 106.589541,
+              "renderMs": 3.133291999999983,
+              "validateMs": 160.831208,
+              "totalMs": 491.37424999999996
+            },
+            "outputUnits": 1201829,
+            "coarseReplacements": 0
+          },
+          {
+            "elapsedMs": 476.21179199999995,
+            "maxRssKiB": 228560,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 208.41829199999998,
+              "matchMs": 107.945042,
+              "renderMs": 3.045000000000016,
+              "validateMs": 156.24512499999997,
+              "totalMs": 475.653459
+            },
+            "outputUnits": 1201829,
+            "coarseReplacements": 0
+          }
+        ]
+      },
+      {
+        "fixture": "same-pair-with-wrapper",
+        "engine": "legacy-raw",
+        "combinedUnits": 1981482,
+        "runs": [
+          {
+            "outcome": "timeout",
+            "cutoffMs": 15000
+          }
+        ]
+      },
+      {
+        "fixture": "same-pair-with-wrapper",
+        "engine": "plugin-shortcut",
+        "combinedUnits": 1981482,
+        "runs": [
+          {
+            "outcome": "timeout",
+            "cutoffMs": 15000
+          }
+        ]
+      },
+      {
+        "fixture": "same-pair-with-start-insertion",
+        "engine": "structural",
+        "combinedUnits": 1981470,
+        "runs": [
+          {
+            "elapsedMs": 461.8413330000001,
+            "maxRssKiB": 224800,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 192.114417,
+              "matchMs": 104.80545799999999,
+              "renderMs": 3.0474590000000035,
+              "validateMs": 161.33883299999997,
+              "totalMs": 461.30616699999996
+            },
+            "outputUnits": 1200770,
+            "coarseReplacements": 3
+          },
+          {
+            "elapsedMs": 500.2620840000001,
+            "maxRssKiB": 226272,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 191.38691699999998,
+              "matchMs": 117.233792,
+              "renderMs": 3.997916000000032,
+              "validateMs": 187.063,
+              "totalMs": 499.681625
+            },
+            "outputUnits": 1200770,
+            "coarseReplacements": 3
+          },
+          {
+            "elapsedMs": 924.7592080000001,
+            "maxRssKiB": 223776,
+            "outcome": "success",
+            "timings": {
+              "parseMs": 574.511834,
+              "matchMs": 124.81704100000002,
+              "renderMs": 9.474666999999954,
+              "validateMs": 215.42233299999998,
+              "totalMs": 924.225875
+            },
+            "outputUnits": 1200770,
+            "coarseReplacements": 3
+          }
+        ]
+      },
+      {
+        "fixture": "same-pair-with-start-insertion",
+        "engine": "legacy-raw",
+        "combinedUnits": 1981470,
+        "runs": [
+          {
+            "outcome": "timeout",
+            "cutoffMs": 15000
+          }
+        ]
+      },
+      {
+        "fixture": "same-pair-with-start-insertion",
+        "engine": "plugin-shortcut",
+        "combinedUnits": 1981470,
+        "runs": [
+          {
+            "outcome": "timeout",
+            "cutoffMs": 15000
+          }
+        ]
+      }
+    ]
+  },
+  "browserBenchmark": {
+    "method": "Three full page loads per fixture; wall time includes navigation, fresh bundled worker, host DOM validation, navigation setup and two animation frames. Chromium, not JCEF; unadapted marker integration and no positional shortcut.",
+    "rows": [
+      {
+        "name": "aligned-6000",
+        "combinedUnits": 1981674,
+        "samples": [
+          {
+            "readyMs": 1019.3123340000001,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2160,
+            "paragraphs": 6000,
+            "banners": [],
+            "height": 203984
+          },
+          {
+            "readyMs": 984.00875,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2160,
+            "paragraphs": 6000,
+            "banners": [],
+            "height": 203984
+          },
+          {
+            "readyMs": 955.3866660000003,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2160,
+            "paragraphs": 6000,
+            "banners": [],
+            "height": 203984
+          }
+        ]
+      },
+      {
+        "name": "wrapped-6000",
+        "combinedUnits": 1981712,
+        "samples": [
+          {
+            "readyMs": 974.3018750000001,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2160,
+            "paragraphs": 6000,
+            "banners": [],
+            "height": 203984
+          },
+          {
+            "readyMs": 933.0878329999996,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2160,
+            "paragraphs": 6000,
+            "banners": [],
+            "height": 203984
+          },
+          {
+            "readyMs": 969.1696249999995,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2160,
+            "paragraphs": 6000,
+            "banners": [],
+            "height": 203984
+          }
+        ]
+      },
+      {
+        "name": "inserted-start-6000",
+        "combinedUnits": 1981700,
+        "samples": [
+          {
+            "readyMs": 938.4595829999998,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2149,
+            "paragraphs": 6002,
+            "banners": [
+              "Some changes are not visible in rendered form (attributes or <head> content) \u2014 the highlights below are incomplete; check the text diff for the rest."
+            ],
+            "height": 204052
+          },
+          {
+            "readyMs": 938.6278330000005,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2149,
+            "paragraphs": 6002,
+            "banners": [
+              "Some changes are not visible in rendered form (attributes or <head> content) \u2014 the highlights below are incomplete; check the text diff for the rest."
+            ],
+            "height": 204052
+          },
+          {
+            "readyMs": 929.8833750000013,
+            "beforePreserved": true,
+            "afterPreserved": true,
+            "markers": 2149,
+            "paragraphs": 6002,
+            "banners": [
+              "Some changes are not visible in rendered form (attributes or <head> content) \u2014 the highlights below are incomplete; check the text diff for the rest."
+            ],
+            "height": 204052
+          }
+        ]
+      }
+    ]
+  },
+  "temporaryAuditDirectory": "/tmp/redline-audit-_5pcfj7c"
+}

@@ -70,13 +70,19 @@ Redline registers a `FrameDiffTool` that appears in the diff viewer switcher whe
 sides of the request are HTML and JCEF is available. The Kotlin side serves the viewer
 shell and both documents over a custom scheme handler; the shell (a Vite + TypeScript app
 in `frontend/`, bundled into `src/main/resources/web/` at build time) computes the merged
-redline with [node-htmldiff](https://www.npmjs.com/package/node-htmldiff) (MIT) and renders
+redline with [redline-engine 0.1.0](https://www.npmjs.com/package/redline-engine) (MIT) and renders
 it into a sandboxed iframe.
 
-The comparison itself runs in a Web Worker, and large documents with many aligned, unchanged
-blocks are partitioned so only the edited blocks enter the expensive matcher. If a comparison
-still outruns its 15-second budget (or the pair is over 2 MB) Redline shows the new version with a
-banner instead of freezing, and you can cancel a slow comparison while it runs.
+Each complete sanitized body pair is compared once in a Web Worker. The host permits 2,000,000
+combined input UTF-16 units and 2,000,000 merged output units, with a 15-second watchdog and Cancel
+button. Limits, unavailable workers and unsupported projections show an explicit fallback to the
+new version; no synchronous or legacy retry can freeze the pane.
+
+Original and Final are actual DOM projections of the merge, including formatting, attributes,
+list items and table structure. All modes use the after document's head and base policy, so
+Original is not a pixel-faithful reconstruction of the original stylesheet. The host independently
+checks both body projections. Complete coarse replacements get a reduced-precision notice;
+head changes and hidden content retain their own explanations.
 
 When a side of the diff is a live document, edits to it are pushed into the open session and the
 shell re-renders in place — no page reload, so your scroll position survives.

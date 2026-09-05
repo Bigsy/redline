@@ -12,7 +12,13 @@ import { buildRedline } from "./diff";
  * This replaces the gitignored real-customer corpus the engine was originally verified against.
  */
 
-const CORPUS = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "testdata", "mock");
+const CORPUS = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..",
+  "..",
+  "testdata",
+  "mock",
+);
 
 function pair(name: string): { before: string; after: string } {
   return {
@@ -36,19 +42,23 @@ describe("mock corpus", () => {
     const result = await buildRedline(before, after);
 
     const doc = new DOMParser().parseFromString(result.html, "text/html");
-    const tocMarkers = doc.querySelectorAll("nav.toc ins.redline, nav.toc del.redline");
+    const tocMarkers = doc.querySelectorAll(
+      "nav.toc [data-diff-node], nav.toc[data-diff-node]",
+    );
     expect(tocMarkers.length).toBeGreaterThan(0);
-    const insertedText = [...doc.querySelectorAll("ins.redline")].map((el) => el.textContent).join(" ");
+    const insertedText = [...doc.querySelectorAll('[data-diff-node="insert"]')]
+      .map((el) => el.textContent)
+      .join(" ");
     expect(insertedText).toContain("Rate limits");
     expect(insertedText).toContain("250");
   });
 
-  it("collection guide: the attribute-only callout change is flagged as under-reported", async () => {
+  it("collection guide: the attribute-only callout change is fully represented", async () => {
     const { before, after } = pair("collection-guide");
     const result = await buildRedline(before, after);
     // The callout's class change (info -> warning) is invisible in the merged body; the marked
     // text edits must not silence the incomplete-highlights signal.
     expect(result.markerCount).toBeGreaterThan(0);
-    expect(result.bodyUnderReported).toBe(true);
+    expect(result.bodyUnderReported).toBe(false);
   });
 });

@@ -1,0 +1,18 @@
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+const dir=new URL('../../src/main/resources/web/assets/',import.meta.url);
+const files=readdirSync(dir);
+const shell=files.find(f=>/^index-.*\.js$/.test(f));
+const worker=files.find(f=>/^diff.worker-.*\.js$/.test(f));
+assert(shell&&worker);
+const shellText=readFileSync(new URL(shell,dir),'utf8');
+const workerText=readFileSync(new URL(worker,dir),'utf8');
+const map=JSON.parse(readFileSync(new URL(shell+'.map',dir),'utf8'));
+assert(!map.sources.some(s=>/vendor|redline-engine|node_modules/.test(s)), 'Engine must not be bundled into the shell');
+for(const text of [shellText,workerText]) assert(!/alignedBodyChunks|runInline|node-htmldiff|\.\.\/redline-engine|registry\.npmjs|cdn\.jsdelivr/.test(text));
+assert.equal(files.filter(f=>f.endsWith('.js')).length,2);
+assert(shellText.includes(worker));
+const report={assets:[shell,worker].map(name=>({name,bytes:readFileSync(new URL(name,dir)).length,sha256:createHash('sha256').update(readFileSync(new URL(name,dir))).digest('hex')})),shellSources:map.sources,singleWorkerEngine:true};
+writeFileSync(new URL('../../docs/engine-integration/bundle-audit.json',import.meta.url),JSON.stringify(report,null,2)+'\n');
+console.log(report);

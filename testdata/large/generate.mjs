@@ -1,7 +1,6 @@
 // Generates a large, purely synthetic HTML pair for manually exercising large-document rendering
-// (PLAN.md item B5): the engine is quadratic in token count, and repetitive markup is deliberately
-// its worst case. Sparse, aligned edits in this fixture should take the partitioned fast path and
-// render normally; the 15-second guard remains the fallback for shapes that cannot be partitioned.
+// with sparse changes across 6,000 paragraphs. All shapes use one whole-body worker comparison;
+// aligned, wrapped and start-insertion variants are exercised by frontend/bench/viewer.spec.ts.
 //
 // Not part of any build or test suite — run it by hand and point runIde at the output:
 //   node generate.mjs [paragraphCount]

@@ -6,6 +6,29 @@ All notable changes to Redline are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-09-05
+
+### Changed
+
+- Replace the vendored matcher and aligned-sibling shortcut with the exact published
+  `redline-engine@0.1.0`, bundled only in a whole-body worker. No synchronous fallback or retry.
+- Original and Final now project structural and formatting changes correctly. Navigation,
+  minimap and find use retained elements and text ranges across mode changes.
+- Attribute, void-element and preformatted changes are marked; whitespace is preserved.
+  Regions compared as complete replacements show a reduced-precision notice: all content is
+  retained, but individual word edits within those regions are not identified. Both browser projections
+  must preserve sanitized inputs or the viewer explicitly falls back.
+- Reserve and sanitize the complete engine metadata namespace, including nested templates.
+  Source ins/del classes remain ordinary content. Keep the after-head/base appearance policy.
+- Cap merged output at 2,000,000 UTF-16 units in addition to the existing input guard,
+  worker watchdog and cancellation. Package runtime dependency license notices.
+
+### Fixed
+
+- Preserve scroll restoration when stylesheets load late, and prevent pending scroll listeners
+  from accumulating across view-mode switches.
+- Remeasure change markers after stylesheets load so navigation and the minimap stay aligned.
+
 ## [0.2.0] — 2026-09-03
 
 ### Added
@@ -63,6 +86,7 @@ Initial release.
 - Compatible with IntelliJ Platform 2024.1 and newer, including 2026.2+ where JCEF ships as the
   separate bundled *Web Browser (JCEF)* plugin.
 
-[Unreleased]: https://github.com/Bigsy/redline/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Bigsy/redline/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Bigsy/redline/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Bigsy/redline/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Bigsy/redline/releases/tag/v0.1.0

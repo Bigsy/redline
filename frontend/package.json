@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "shot": "node ../assets/marketplace/compose-shot.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "benchmark": "playwright test --config benchmark.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",
@@ -21,5 +22,8 @@
     "typescript": "^5.5.0",
     "vite": "^8.2.2",
     "vitest": "^4.1.11"
+  },
+  "dependencies": {
+    "redline-engine": "0.1.0"
   }
 }

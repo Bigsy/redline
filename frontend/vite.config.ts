@@ -15,6 +15,7 @@ export default defineConfig({
     sourcemap: true,
   },
   test: {
+    setupFiles: ["./src/test-worker.ts"],
     // diff.ts needs DOMParser; happy-dom provides it headlessly (JCEF's real Chromium at runtime).
     environment: "happy-dom",
     // Unit tests only — e2e/ holds Playwright specs (`pnpm run test:e2e`), which vitest's default

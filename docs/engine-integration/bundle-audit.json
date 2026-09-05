@@ -1,0 +1,23 @@
+{
+  "assets": [
+    {
+      "name": "index-DgSTEW13.js",
+      "bytes": 22515,
+      "sha256": "9081d37cbc21fa65dea65bf22a14ef74bda85025e09ed96f64be9b2262f5f675"
+    },
+    {
+      "name": "diff.worker-C8jl8LPX.js",
+      "bytes": 185099,
+      "sha256": "9a2ace443e2f4a154dc23c5a1d7823b10cd4c71988f953a87c770737400415f0"
+    }
+  ],
+  "shellSources": [
+    "../../../../../frontend/src/review-document.ts",
+    "../../../../../frontend/src/diff.ts",
+    "../../../../../frontend/src/findbar.ts",
+    "../../../../../frontend/src/minimap.ts",
+    "../../../../../frontend/src/viewer.ts",
+    "../../../../../frontend/src/main.ts"
+  ],
+  "singleWorkerEngine": true
+}

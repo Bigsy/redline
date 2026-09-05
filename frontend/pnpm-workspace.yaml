@@ -2,3 +2,6 @@
 # (rolldown/oxc replaced esbuild); if `pnpm install` warns about ignored build scripts, add the
 # package here after checking what its script does.
 allowBuilds: {}
+# The integration explicitly pins this newly published, verified release.
+minimumReleaseAgeExclude:
+  - redline-engine@0.1.0

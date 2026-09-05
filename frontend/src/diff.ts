@@ -1,126 +1,42 @@
-// Vendored engine (MIT) with the atomic-tag boundary patch — see vendor/htmldiff.js header.
-import htmldiff from "./vendor/htmldiff";
-import type { EngineChunk, EngineRequest, EngineResponse } from "./diff.worker";
-
-/**
- * Atomic tags passed to node-htmldiff on EVERY call.
- *
- * The library default MUST NOT be used, even though the vendored engine patches the boundary bug
- * (see vendor/htmldiff.js): the default list contains `head`, which would treat the whole `<head>`
- * as one opaque token, and a stray `a`. This list is the default minus those two. Defense in
- * depth — the boundary patch kills the prefix-match failure class, this list keeps the semantics
- * we actually want.
- */
-const ATOMIC_TAGS = "iframe,object,math,svg,script,video,style";
-
-/**
- * Styling for the redline markers, injected into the merged document.
- *
- * Every declaration carries `!important` and the visibility-critical properties are pinned:
- * a reviewed stylesheet like `ins, del { display: none }` must not be able to hide real changes
- * while the viewer reports "marked changes". (`display` itself is not forced — a marker can wrap
- * block content, so no single value is right; markers hidden that way still have zero geometry
- * and are caught by the visibility check in the shell.)
- *
- * The marker text color is pinned dark on the markers themselves (not descendants): the
- * backgrounds are light, and a dark-themed reviewed document would otherwise inherit light text
- * into them — light-on-light. Elements inside a marker with their own color rules keep them.
- */
+/** Whole sanitized bodies enter one bounded worker; the browser independently validates both projections. */
+import type {
+  EngineRequest,
+  EngineResponse,
+  EngineSuccess,
+} from "./engine-protocol";
+import {
+  MARKER_SELECTOR,
+  canonicalBody,
+  projectBody,
+  elements,
+} from "./review-document";
 const REDLINE_CSS = `
-  ins.redline, del.redline, [data-diff-node] {
-    visibility: visible !important;
-    opacity: 1 !important;
-    content-visibility: visible !important;
+  [data-diff-op][data-diff-node], [data-diff-op][data-diff-unwrap] {
+    visibility: visible !important; opacity: 1 !important; content-visibility: visible !important;
   }
-  ins.redline { background: #d3f2d3 !important; color: #1a1a1a !important; text-decoration: none !important; outline: 1px solid #7ac47a !important; }
-  del.redline { background: #f8d7d7 !important; color: #1a1a1a !important; text-decoration: line-through !important; outline: 1px solid #d98c8c !important; }
-  ins.redline img { outline: 3px solid #7ac47a !important; }
-  del.redline img { outline: 3px solid #d98c8c !important; }
-  /* Block elements the engine marks by annotating the tag itself (no ins/del wrapper) — see
-     reconstructSide. Their text content is usually wrapped too; the dashed outline marks the
-     structural change (and is the ONLY marking for annotation-only changes, e.g. empty blocks). */
-  [data-diff-node="ins"] { outline: 1px dashed #7ac47a !important; }
-  [data-diff-node="del"] { outline: 1px dashed #d98c8c !important; }
-  /* The change block the reader is currently on (minimap.ts#highlight). box-shadow, not outline:
-     outline is already spent on the ins/del border above. */
+  [data-diff-node="insert"] { background: #d3f2d3 !important; color: #1a1a1a !important; text-decoration: none !important; outline: 1px solid #7ac47a !important; }
+  [data-diff-node="delete"] { background: #f8d7d7 !important; color: #1a1a1a !important; text-decoration: line-through !important; outline: 1px solid #d98c8c !important; }
+  [data-diff-unwrap] { outline: 1px dashed #b58a25 !important; }
   [data-redline-current] { box-shadow: 0 0 0 2px #3574f0 !important; }
-  /* View modes. The shell stamps html[data-redline-mode] on the framed document
-     (minimap.ts#setMode), and only the shell can SET it: reviewed scripts never run, reviewed CSS
-     cannot set attributes, and sanitization refuses the attribute from the document itself (see
-     REDLINE_OWNED_ATTRIBUTES).
-     Reviewed CSS can still SELECT on it, though: a rule reading
-     html[data-redline-mode="final"] ins.redline { display: none } would empty the Final view
-     while Redline looked honest. Nothing here can stop that — the visibility/opacity pins above
-     do not cover 'display' at all. What catches it is the per-mode geometry check in
-     minimap.ts#markersVisible, which is why that check must stay live in original/final rather
-     than being switched off there.
-     Markers hidden by the rules below measure zero and drop out of the minimap by design (the
-     zero-height skip rule). */
-  html[data-redline-mode="original"] ins.redline,
-  html[data-redline-mode="original"] [data-diff-node="ins"] { display: none !important; }
-  html[data-redline-mode="final"] del.redline,
-  html[data-redline-mode="final"] [data-diff-node="del"] { display: none !important; }
-  /* The side that survives is the document as it was/will be, so it is shown unmarked. The
-     color reset matters: the pin above exists only because the marker BACKGROUNDS are light, and once the
-     background is transparent it is simply wrong — it painted near-black text onto a dark
-     document's canvas, and flattened coloured headings and links inside a changed span. */
-  html[data-redline-mode="original"] del.redline,
-  html[data-redline-mode="final"] ins.redline {
-    background: transparent !important;
-    color: inherit !important;
-    text-decoration: none !important;
-    outline: none !important;
-  }
-  html[data-redline-mode="original"] del.redline img,
-  html[data-redline-mode="original"] [data-diff-node="del"],
-  html[data-redline-mode="final"] ins.redline img,
-  html[data-redline-mode="final"] [data-diff-node="ins"] { outline: none !important; }
+  ::highlight(redline-current) { background: #a8c7ff; }
 `;
 
-/**
- * Content-Security-Policy for reviewed/redline documents: same-origin (the session's
- * `/doc/<session>/` routes) and data: assets only — a reviewed document must not be able to
- * phone home via images, stylesheets, or fonts. Scripts stay dead (sandbox + stripping + this).
- *
- * KEEP IN SYNC with `RedlineWebResources.DOC_CSP`, which serves the same policy as a response
- * header on the raw before/after session documents (used by the fallback states).
- */
 export const DOC_CSP =
   "default-src 'self' data:; style-src 'self' 'unsafe-inline' data:; " +
   "script-src 'none'; object-src 'none'; frame-src 'none'; form-action 'none'";
 
 export interface RedlineResult {
-  /** The merged redline document. */
   html: string;
-  /**
-   * Number of change markers in the merged body: ins/del wrappers plus block elements the engine
-   * annotates in place (`data-diff-node`) instead of wrapping — an added table row or list item
-   * is an annotated element whose text is wrapped; an added empty block is annotation-only.
-   */
+  reducedPrecision: boolean;
+  timings: EngineSuccess["timings"];
   markerCount: number;
-  /** The two heads differ; head changes are invisible by design (after head is kept). */
   headDiffers: boolean;
-  /**
-   * The merged body does not fully represent the before side — attribute-only changes the
-   * engine silently resolves to the after markup. Detected by reconstructing the before side
-   * from the redline (drop ins, unwrap del) and comparing with the real one.
-   */
   bodyUnderReported: boolean;
-  /**
-   * The two sides differ only in whitespace or line endings that the renderer collapses away:
-   * the sanitized head and body markup are identical once whitespace runs are collapsed, AND no
-   * whitespace-preserving element changed at all. The rendered document is genuinely unchanged,
-   * so the zero-marker state is not under-reporting anything — it is the truth, and the shell
-   * says so with an info banner rather than a warning. (DOMParser has already normalised CRLF to
-   * LF, so collapsing whitespace covers line-ending-only changes too.)
-   */
   formattingOnly: boolean;
 }
 
-/** The engine is given this long to finish before the run is abandoned (see [runEngine]). */
 export const DEFAULT_ENGINE_TIMEOUT_MS = 15_000;
 
-/** The engine ran past its time budget and the run was abandoned. */
 export class DiffTimeoutError extends Error {
   constructor(readonly timeoutMs: number) {
     super(`the redline engine did not finish within ${timeoutMs} ms`);
@@ -128,7 +44,6 @@ export class DiffTimeoutError extends Error {
   }
 }
 
-/** The caller aborted the run (the shell's Cancel button). */
 export class DiffCancelledError extends Error {
   constructor() {
     super("the redline was cancelled");
@@ -136,121 +51,98 @@ export class DiffCancelledError extends Error {
   }
 }
 
-/** A started engine run: its eventual merged body, and the only way to stop it. */
+export class DiffEngineError extends Error {
+  constructor(readonly response: EngineResponse) {
+    super(
+      response.outcome === "failure"
+        ? response.message
+        : response.outcome === "limit"
+          ? `Engine limit: ${response.limit}`
+          : "Unsupported engine representation",
+    );
+    this.name = "DiffEngineError";
+  }
+}
+
 export interface EngineRun {
-  result: Promise<string>;
+  result: Promise<EngineSuccess>;
   terminate(): void;
 }
 
 export type EngineExecutor = (
   beforeBody: string,
   afterBody: string,
-  chunks?: readonly EngineChunk[],
 ) => EngineRun;
 
 export interface EngineOptions {
-  /** Abandon the run after this long. Defaults to [DEFAULT_ENGINE_TIMEOUT_MS]. */
   timeoutMs?: number;
-  /** Abort the run early (the shell's Cancel button). */
   signal?: AbortSignal;
-  /** Test seam: run the engine some other way. Production always uses the default. */
   execute?: EngineExecutor;
 }
 
-/**
- * Run the engine on the main thread. Used where there is no `Worker` (happy-dom in the unit
- * tests) — the timeout cannot interrupt it there, since the engine never yields.
- */
-function runInline(
-  beforeBody: string,
-  afterBody: string,
-  chunks?: readonly EngineChunk[],
-): EngineRun {
-  return {
-    result: Promise.resolve().then(() =>
-      (chunks ?? [{ before: beforeBody, after: afterBody }])
-        .map((chunk) =>
-          chunk.before === chunk.after
-            ? chunk.after
-            : htmldiff(chunk.before, chunk.after, "redline", null, ATOMIC_TAGS),
-        )
-        .join(""),
-    ),
-    terminate: () => {},
-  };
-}
-
-function runInWorker(
-  beforeBody: string,
-  afterBody: string,
-  chunks?: readonly EngineChunk[],
-): EngineRun {
-  // Vite emits the worker as its own chunk; `base: "./"` keeps the URL relative so it loads under
-  // http://redline.localhost/ (and from the Playwright dist route in e2e/sandbox.spec.ts).
-  const worker = new Worker(new URL("./diff.worker.ts", import.meta.url), { type: "module" });
-  const result = new Promise<string>((resolve, reject) => {
-    worker.addEventListener("message", (event: MessageEvent<EngineResponse>) => {
+function runInWorker(beforeBody: string, afterBody: string): EngineRun {
+  const worker = new Worker(new URL("./diff.worker.ts", import.meta.url), {
+    type: "module",
+  });
+  const result = new Promise<EngineSuccess>((resolve, reject) => {
+    worker.addEventListener(
+      "message",
+      (event: MessageEvent<EngineResponse>) => {
+        const response = event.data;
+        if (response.outcome === "success" && response.modelVersion === 1)
+          resolve(response);
+        else reject(new DiffEngineError(response));
+      },
+    );
+    worker.addEventListener("error", (event) =>
+      reject(new Error(event.message || "Redline worker unavailable")),
+    );
+    worker.addEventListener("messageerror", () =>
+      reject(new Error("Redline worker response unavailable")),
+    );
+    const request: EngineRequest = { before: beforeBody, after: afterBody };
+    try {
+      worker.postMessage(request);
+    } catch (error) {
       worker.terminate();
-      if ("error" in event.data) reject(new Error(event.data.error));
-      else resolve(event.data.html);
-    });
-    worker.addEventListener("error", (event) => {
-      worker.terminate();
-      reject(new Error(event.message || "the redline worker failed"));
-    });
-    const request: EngineRequest = chunks
-      ? { chunks: [...chunks], className: "redline", atomicTags: ATOMIC_TAGS }
-      : { before: beforeBody, after: afterBody, className: "redline", atomicTags: ATOMIC_TAGS };
-    worker.postMessage(request);
+      reject(error);
+    }
   });
   return { result, terminate: () => worker.terminate() };
 }
+const defaultExecutor: EngineExecutor = runInWorker;
 
-const defaultExecutor: EngineExecutor = (beforeBody, afterBody, chunks) => {
-  if (typeof Worker === "undefined") return runInline(beforeBody, afterBody, chunks);
-  try {
-    return runInWorker(beforeBody, afterBody, chunks);
-  } catch {
-    // A worker that cannot even be constructed (blocked, or a stripped-down runtime) must not
-    // cost the redline: fall back to the main thread and let the time budget do its job.
-    return runInline(beforeBody, afterBody, chunks);
-  }
-};
-
-/**
- * The engine step, with a time budget and a cancel path.
- *
- * `htmldiff` is quadratic in token count, so a big document can run for minutes; on the main
- * thread that is an unresponsive pane with no way out. Terminating the worker is the only way to
- * stop a run in progress, which is why timeout and cancel both go through [EngineRun.terminate].
- */
 export function runEngine(
   beforeBody: string,
   afterBody: string,
   options: EngineOptions = {},
-  chunks?: readonly EngineChunk[],
-): Promise<string> {
+): Promise<EngineSuccess> {
   const timeoutMs = options.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
   const signal = options.signal;
-  // Existing test/custom executors can ignore the optional third argument. Production's executor
-  // uses it for the large-document fast path.
-  const run = (options.execute ?? defaultExecutor)(beforeBody, afterBody, chunks);
+  if (signal?.aborted) return Promise.reject(new DiffCancelledError());
+  let run: EngineRun;
+  try {
+    run = (options.execute ?? defaultExecutor)(beforeBody, afterBody);
+  } catch (error) {
+    return Promise.reject(
+      new Error(`Redline worker unavailable: ${String(error)}`),
+    );
+  }
 
-  return new Promise<string>((resolve, reject) => {
+  return new Promise<EngineSuccess>((resolve, reject) => {
     let settled = false;
     const settle = (action: () => void): void => {
       if (settled) return;
       settled = true;
+      run.terminate();
       clearTimeout(timer);
       signal?.removeEventListener("abort", onAbort);
       action();
     };
     const onAbort = (): void => {
-      run.terminate();
       settle(() => reject(new DiffCancelledError()));
     };
     const timer = setTimeout(() => {
-      run.terminate();
       settle(() => reject(new DiffTimeoutError(timeoutMs)));
     }, timeoutMs);
 
@@ -271,76 +163,18 @@ interface PreparedSides {
   afterBody: string;
   headDiffers: boolean;
   formattingOnly: boolean;
-  engineChunks?: EngineChunk[];
 }
 
-/**
- * Above this size, try the conservative aligned-sibling fast path.
- *
- * node-htmldiff searches globally for matching tokens. A long document made from thousands of
- * mostly unchanged sibling blocks therefore spends nearly all its time considering identical
- * tag/whitespace tokens at unrelated positions. When both bodies retain the exact same top-level
- * node shape, each corresponding node is an independent comparison boundary: unchanged nodes can
- * pass straight through and only edited nodes need the quadratic engine. If the shape differs at
- * all (inserted/deleted/retyped nodes), return undefined and preserve the original whole-body
- * algorithm.
- */
-const ALIGNED_CHUNK_THRESHOLD = 100_000;
-
-function serializeBodyNode(node: ChildNode): string {
-  if (node.nodeType === Node.ELEMENT_NODE) return (node as Element).outerHTML;
-  // textContent is not an HTML serialization (`&amp;copy;` would become `&copy;` and then parse as
-  // © when the merged body is assigned). A detached container gives the browser's exact escaping.
-  const container = node.ownerDocument!.createElement("div");
-  container.appendChild(node.cloneNode(true));
-  return container.innerHTML;
-}
-
-function alignedBodyChunks(before: HTMLElement, after: HTMLElement): EngineChunk[] | undefined {
-  if (before.innerHTML.length + after.innerHTML.length < ALIGNED_CHUNK_THRESHOLD) return undefined;
-
-  const beforeNodes = [...before.childNodes];
-  const afterNodes = [...after.childNodes];
-  if (beforeNodes.length < 2 || beforeNodes.length !== afterNodes.length) return undefined;
-
-  for (let i = 0; i < beforeNodes.length; i++) {
-    const left = beforeNodes[i];
-    const right = afterNodes[i];
-    if (left.nodeType !== right.nodeType || left.nodeName !== right.nodeName) return undefined;
-  }
-
-  const serialized = beforeNodes.map((node, index) => ({
-    before: serializeBodyNode(node),
-    after: serializeBodyNode(afterNodes[index]),
-  }));
-  const equalCharacters = serialized.reduce(
-    (total, chunk) => total + (chunk.before === chunk.after ? chunk.after.length : 0),
-    0,
-  );
-  // Positional partitioning is intended for sparse edits, not a body whose same-named siblings
-  // were broadly inserted, deleted or moved. Keep the mature global matcher for that case.
-  if (equalCharacters / Math.max(before.innerHTML.length, after.innerHTML.length) < 0.8) return undefined;
-
-  const chunks: EngineChunk[] = [];
-  for (const chunk of serialized) {
-    const previous = chunks.at(-1);
-    // Keep changed nodes isolated, but collapse long unchanged sibling runs. This reduces the
-    // generated 6,000-paragraph fixture from 12,001 structured-cloned objects to about 240.
-    if (chunk.before === chunk.after && previous && previous.before === previous.after) {
-      previous.before += chunk.before;
-      previous.after += chunk.after;
-    } else {
-      chunks.push(chunk);
-    }
-  }
-  return chunks;
-}
-
-/** Parse and sanitize both sides. Stays on the main thread: workers have no DOMParser. */
 function prepareSides(beforeHtml: string, afterHtml: string): PreparedSides {
   const parser = new DOMParser();
-  const before = parser.parseFromString(beforeHtml, "text/html");
-  const after = parser.parseFromString(afterHtml, "text/html");
+  const before = parser.parseFromString(
+    beforeHtml.replace(/\r\n?/g, "\n"),
+    "text/html",
+  );
+  const after = parser.parseFromString(
+    afterHtml.replace(/\r\n?/g, "\n"),
+    "text/html",
+  );
   sanitizeReviewedDocument(before);
   sanitizeReviewedDocument(after);
 
@@ -353,22 +187,34 @@ function prepareSides(beforeHtml: string, afterHtml: string): PreparedSides {
     afterBody,
     headDiffers: before.head.innerHTML !== after.head.innerHTML,
     formattingOnly:
-      collapseWhitespace(before.head.innerHTML) === collapseWhitespace(after.head.innerHTML) &&
+      collapseWhitespace(before.head.innerHTML) ===
+        collapseWhitespace(after.head.innerHTML) &&
       collapseWhitespace(beforeBody) === collapseWhitespace(afterBody) &&
       preformattedMarkup(before) === preformattedMarkup(after),
-    engineChunks: alignedBodyChunks(before.body, after.body),
   };
 }
 
-/** Everything after the engine call: the merged document plus its truthfulness signals. */
-function assembleRedline(sides: PreparedSides, redlineBody: string, baseHref?: string): RedlineResult {
-  const { before, after, beforeBody, headDiffers, formattingOnly } = sides;
+function assembleRedline(
+  sides: PreparedSides,
+  result: EngineSuccess,
+  baseHref?: string,
+): RedlineResult {
+  const { before, after, headDiffers, formattingOnly } = sides;
+  const expectedAfter = canonicalBody(after.body);
 
-  after.body.innerHTML = redlineBody;
-  const markerCount = after.body.querySelectorAll("ins.redline, del.redline, [data-diff-node]").length;
+  after.body.innerHTML = result.html;
+  const markerCount = after.body.querySelectorAll(MARKER_SELECTOR).length;
+  const original = after.body.cloneNode(true) as HTMLElement;
+  const final = after.body.cloneNode(true) as HTMLElement;
+  projectBody(original, "before");
+  projectBody(final, "after");
   const bodyUnderReported =
-    normalizeForComparison(reconstructSide(after.body, "before"), before) !==
-    normalizeForComparison(beforeBody, before);
+    canonicalBody(original) !== canonicalBody(before.body) ||
+    canonicalBody(final) !== expectedAfter;
+  if (bodyUnderReported)
+    throw new Error(
+      "Unsupported browser projection: merged content does not preserve both documents",
+    );
 
   // Head additions, in order: CSP first (governs everything after it), then base, then our CSS.
   const csp = after.createElement("meta");
@@ -387,142 +233,55 @@ function assembleRedline(sides: PreparedSides, redlineBody: string, baseHref?: s
   return {
     html: `<!doctype html>\n${after.documentElement.outerHTML}`,
     markerCount,
+    reducedPrecision: result.diagnostics.some(
+      (d) => d.code === "coarse-replacement",
+    ),
+    timings: result.timings,
     headDiffers,
     bodyUnderReported,
     formattingOnly,
   };
 }
 
-/**
- * Produce a single redline document from two full HTML documents: the after side's `<head>`
- * (styles resolve via the session's asset routes) with a merged body in which insertions and
- * deletions are wrapped in `<ins class="redline">` / `<del class="redline">`.
- *
- * The result carries truthfulness signals the viewer must surface: the engine cannot represent
- * head changes or attribute-only changes in the merged body, and those can coexist with marked
- * changes — zero markers is NOT the only under-reporting case.
- *
- * Asynchronous because the engine step runs in a worker: it is the one part that can leave the
- * main thread, and it is the part that can take minutes. It rejects with [DiffTimeoutError] or
- * [DiffCancelledError] if the run is abandoned — both mean "no redline", not "no changes", and
- * the shell must say so.
- *
- * @param baseHref When given, injected as `<base href>` in `<head>` so the document's relative
- *   asset URLs resolve against the session's `/doc/<session>/` routes rather than the shell page.
- *
- * Scripts and refresh directives are stripped as defense-in-depth; the structural guarantees are
- * the shell's sandboxed iframe (no `allow-scripts`) plus the injected CSP and the Kotlin-side
- * navigation guard.
- */
 export async function buildRedline(
   beforeHtml: string,
   afterHtml: string,
   baseHref?: string,
   options: EngineOptions = {},
 ): Promise<RedlineResult> {
+  const start = performance.now();
   const sides = prepareSides(beforeHtml, afterHtml);
-  const redlineBody = await runEngine(sides.beforeBody, sides.afterBody, options, sides.engineChunks);
-  return assembleRedline(sides, redlineBody, baseHref);
+  const prepared = performance.now();
+  const result = await runEngine(sides.beforeBody, sides.afterBody, options);
+  const compared = performance.now();
+  const assembled = assembleRedline(sides, result, baseHref);
+  recordTiming("redline-prepare", start, prepared);
+  recordTiming("redline-worker", prepared, compared, result.timings);
+  recordTiming("redline-validation", compared, performance.now());
+  return assembled;
 }
 
-/** Whitespace runs are invisible when rendered; collapse them before comparing two markups. */
 function collapseWhitespace(html: string): string {
   return html.replace(/\s+/g, " ").trim();
 }
 
-/**
- * Elements that render their whitespace verbatim — inside them a reindent is a REAL, visible
- * change, so [collapseWhitespace] must not be allowed to declare it invisible. Compared exactly.
- *
- * Residual risk, accepted: whitespace preservation applied by a stylesheet rule (`p { white-space:
- * pre }`) is invisible to this check — only the elements that preserve whitespace by default and
- * inline `style` attributes mentioning `white-space` are caught. The cost of a miss is an info
- * banner where a warning was due, on a document that also produced zero markers.
- */
-const PREFORMATTED_SELECTOR = "pre, textarea, xmp, listing, plaintext, [style*='white-space']";
+const PREFORMATTED_SELECTOR =
+  "pre, textarea, xmp, listing, plaintext, [style*='white-space']";
 
 function preformattedMarkup(doc: Document): string {
-  return [...doc.body.querySelectorAll(PREFORMATTED_SELECTOR)].map((el) => el.outerHTML).join("\u0000");
+  return [...doc.body.querySelectorAll(PREFORMATTED_SELECTOR)]
+    .map((el) => el.outerHTML)
+    .join("\u0000");
 }
 
-/** Back-compat/test convenience: just the merged document. */
-export async function diffHtml(beforeHtml: string, afterHtml: string, baseHref?: string): Promise<string> {
+export async function diffHtml(
+  beforeHtml: string,
+  afterHtml: string,
+  baseHref?: string,
+): Promise<string> {
   return (await buildRedline(beforeHtml, afterHtml, baseHref)).html;
 }
 
-/**
- * Rebuild one side's body markup from the merged redline: the before side is everything except
- * insertions (drop `ins`, unwrap `del`); the after side is the mirror image. If the rebuilt
- * before side differs from the real one, the redline under-reports (attribute-only changes,
- * or structural changes the engine failed to mark at all, e.g. an added `<hr>`).
- *
- * The engine emits changes in TWO shapes, both handled here: inline content is wrapped in
- * `<ins>`/`<del>` elements, but block elements are ANNOTATED in place (`data-diff-node="ins|del"`
- * + `data-operation-index`, no wrapper) — an added `<li>` is an annotated li whose text carries
- * the wrapper. Annotations of the dropped side are removed with their element; annotations of the
- * kept side revert to the plain tag by stripping the marker attributes.
- */
-function reconstructSide(mergedBody: Element, side: "before" | "after"): string {
-  const [dropped, kept] = side === "before" ? (["ins", "del"] as const) : (["del", "ins"] as const);
-  const clone = mergedBody.cloneNode(true) as Element;
-  clone.querySelectorAll(`${dropped}.redline, [data-diff-node="${dropped}"]`).forEach((node) => node.remove());
-  clone.querySelectorAll(`${kept}.redline`).forEach((node) => node.replaceWith(...node.childNodes));
-  clone.querySelectorAll(`[data-diff-node="${kept}"]`).forEach((node) => {
-    node.removeAttribute("data-diff-node");
-    node.removeAttribute("data-operation-index");
-  });
-  return clone.innerHTML;
-}
-
-/**
- * Canonicalize markup for the under-reporting comparison. Two artifact classes of the token diff
- * must not masquerade as hidden changes:
- *
- * - Whitespace runs — tokenization may rearrange them, and they are invisible when rendered.
- * - Phantom EMPTY elements — a tag-alignment shift can match an added element's tags as "equal"
- *   and wrap only its text (`<li><ins>b</ins></li>`), leaving an attribute-less, content-less
- *   element behind in the reconstruction. Elements like that carry no reviewable information, so
- *   they are dropped from BOTH sides. (Cost: a bare void-element insertion such as `<hr>` is not
- *   flagged — it still renders in the redline, just unhighlighted, and an hr-only change still
- *   surfaces via the zero-marker "unrepresentable" state.)
- */
-function normalizeForComparison(html: string, scratch: Document): string {
-  const container = scratch.createElement("div");
-  container.innerHTML = html;
-  const elements = [...container.querySelectorAll("*")];
-  // Reverse document order visits descendants before ancestors, so removals cascade upward
-  // (emptying a <li> can empty its <ul>).
-  for (let i = elements.length - 1; i >= 0; i--) {
-    const el = elements[i];
-    if (el.attributes.length === 0 && el.children.length === 0 && (el.textContent ?? "").trim() === "") {
-      el.remove();
-    }
-  }
-  return container.innerHTML.replace(/\s+/g, " ").trim();
-}
-
-/**
- * Defense-in-depth sanitization of a reviewed document (the structural guarantee is the sandbox):
- * script elements, inline event handlers, and refresh/redirect directives. A sandboxed frame
- * without `allow-scripts` still honors `<meta http-equiv="refresh">` — self-navigation is never
- * blocked by sandboxing — so refresh removal here (plus the Kotlin navigation guard) is what
- * actually keeps the pane on the redline.
- */
-/**
- * Attributes Redline itself means something by, and therefore will not accept from a reviewed
- * document. `data-diff-node`/`data-operation-index` are how the ENGINE annotates a changed block
- * in place (decision #1); `data-redline-mode`/`data-redline-current` are how the SHELL drives the
- * view modes and the current-block highlight (minimap.ts).
- *
- * The `redline` CLASS on an `ins`/`del` is stripped for the same reason, just below — see there.
- *
- * A reviewed document carrying any of them would be lying to the reader. `data-diff-node="del"`
- * on an untouched element paints it as a deletion, counts as a marker, plots a minimap tick, and
- * makes `reconstructSide` drop the element from the before side — so the "highlights are
- * incomplete" warning fires as well. `data-redline-mode="final"` on the document's own `<html>`
- * hides every real deletion before the reader has touched anything, which is precisely what
- * decision #6 exists to prevent. They are ours to set, on markup we produced.
- */
 const REDLINE_OWNED_ATTRIBUTES = new Set([
   "data-diff-node",
   "data-operation-index",
@@ -531,34 +290,38 @@ const REDLINE_OWNED_ATTRIBUTES = new Set([
 ]);
 
 export function sanitizeReviewedDocument(doc: Document): void {
-  doc.querySelectorAll("script").forEach((node) => node.remove());
-  doc.querySelectorAll("meta[http-equiv]").forEach((node) => {
-    const equiv = node.getAttribute("http-equiv")?.trim().toLowerCase();
-    // `refresh`: the sandbox does not block self-navigation. `content-security-policy`: CSP
-    // policies INTERSECT, so a reviewed `style-src 'none'` kills the stylesheet this module
-    // injects — every marker colour, the visibility pins and the view-mode rules with it — and
-    // inserting ours first does not help. The frame's policy is ours to set (assembleRedline adds
-    // it after this runs) and the scheme handler sends the same one as a header.
-    if (equiv === "refresh" || equiv === "content-security-policy") node.remove();
-  });
-  // A document-supplied `<ins class="redline">` is indistinguishable from an engine marker: it
-  // gets painted and counted as a change, and in original/final mode it hides content that really
-  // is in that version of the document. The class is ours on ins/del specifically; anywhere else
-  // it means nothing to us, so the document keeps it.
-  doc.querySelectorAll("ins.redline, del.redline").forEach((el) => {
-    el.classList.remove("redline");
-    if (el.classList.length === 0) el.removeAttribute("class");
-  });
   // `*` reaches <html> too, which is where a forged data-redline-mode would sit.
-  doc.querySelectorAll("*").forEach((el) => {
+  elements(doc).forEach((el) => {
+    if (el.localName === "script") {
+      el.remove();
+      return;
+    }
+    if (
+      el.localName === "meta" &&
+      ["refresh", "content-security-policy"].includes(
+        el.getAttribute("http-equiv")?.trim().toLowerCase() ?? "",
+      )
+    ) {
+      el.remove();
+      return;
+    }
     for (const attr of [...el.attributes]) {
       const name = attr.name.toLowerCase();
       // Inline handlers (onclick etc.) survive tag stripping; drop them too.
-      if (name.startsWith("on") || REDLINE_OWNED_ATTRIBUTES.has(name)) el.removeAttribute(attr.name);
+      if (
+        name.startsWith("on") ||
+        name.startsWith("data-diff-") ||
+        REDLINE_OWNED_ATTRIBUTES.has(name)
+      )
+        el.removeAttribute(attr.name);
     }
   });
-  // The engine's tokenizer silently drops HTML comments; strip them from both sides up front so
-  // a comment difference (invisible when rendered anyway) can't skew the under-reporting check.
+  // Comments are excluded by the host review policy on both sides.
+  for (const el of elements(doc)) {
+    if (el.localName === "script") el.remove();
+    if (el.localName === "template" && "content" in el)
+      stripComments((el as HTMLTemplateElement).content);
+  }
   stripComments(doc);
 }
 
@@ -567,4 +330,15 @@ function stripComments(node: Node): void {
     if (child.nodeType === Node.COMMENT_NODE) child.remove();
     else stripComments(child);
   }
+}
+
+/** Bounded performance entries for reproducible browser benchmarks; never retain documents. */
+export function recordTiming(
+  name: string,
+  start: number,
+  end = performance.now(),
+  detail?: unknown,
+): void {
+  performance.clearMeasures(name);
+  performance.measure(name, { start, end, detail });
 }

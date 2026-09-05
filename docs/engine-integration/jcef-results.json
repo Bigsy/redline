@@ -1,0 +1,57 @@
+{
+  "runtime": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "checks": [
+    {
+      "name": "packaged worker rendered",
+      "nav": true,
+      "banners": [],
+      "markers": 5,
+      "worker": [
+        {
+          "duration": 24.200000017881393,
+          "timings": {
+            "parseMs": 2,
+            "matchMs": 8.699999988079071,
+            "renderMs": 0,
+            "validateMs": 1.5,
+            "totalMs": 12.199999988079071
+          }
+        }
+      ]
+    },
+    {
+      "name": "Original exact body",
+      "ticks": 2
+    },
+    {
+      "name": "Final exact body",
+      "ticks": 2
+    },
+    {
+      "name": "toolbar bridge navigation",
+      "counter": "1 / 2"
+    },
+    {
+      "name": "find query",
+      "count": "1"
+    },
+    {
+      "name": "packaged shell live refresh, mode preserved",
+      "resourcePayloads": "test-injected"
+    },
+    {
+      "name": "swapped resource payloads in packaged shell",
+      "nativeToolbarDispatch": false
+    },
+    {
+      "name": "packaged cancellation and safe fallback",
+      "delayedRealWorker": true
+    },
+    {
+      "name": "packaged unavailable-worker fallback"
+    }
+  ],
+  "remaining": [
+    "Native Swap Sides toolbar click and IntelliJ Document/VFS edit notification: standalone Java sandbox is not addressable by available computer-use app API. Kotlin session update/swap tests pass; shell behavior tested above."
+  ]
+}

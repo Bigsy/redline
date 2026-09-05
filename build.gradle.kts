@@ -175,8 +175,8 @@ val frontendBuild = tasks.register<Exec>("frontendBuild") {
 tasks {
     processResources {
         dependsOn(frontendBuild)
-        // The vendored htmldiff.js is MIT; ship its license with the bundle that embeds it.
-        from("frontend/src/vendor/node-htmldiff-LICENSE") {
+        // Notices for the bundled published engine and its runtime dependencies.
+        from("third-party") {
             into("third-party")
         }
     }

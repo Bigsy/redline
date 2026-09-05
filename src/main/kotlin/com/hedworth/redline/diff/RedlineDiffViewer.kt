@@ -185,7 +185,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
      * redline has to as well, or a Local Changes diff quietly shows the file as it was when the
      * pane opened.
      *
-     * Debounced through a [SingleAlarm] on the EDT: the engine is quadratic, so a request per
+     * Debounced through a [SingleAlarm] on the EDT: comparisons are bounded but substantial work, so a request per
      * keystroke would be a request per character too many. `ModalityState.any()` keeps it firing
      * while a modal (a commit dialog, say) is up, which is exactly when a diff is being read; the
      * runnable only reads documents and posts JS, so it touches no model under that modality.

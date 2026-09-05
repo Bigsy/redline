@@ -8,9 +8,24 @@ import {
   type MinimapController,
 } from "./minimap";
 
-const ins = (top: number, height = 20): MarkerRect => ({ top, height, kind: "ins" });
-const del = (top: number, height = 20): MarkerRect => ({ top, height, kind: "del" });
-const block = (top: number, bottom: number, kind: MarkerKind | "mixed") => ({ top, bottom, kind, elements: [] });
+const ins = (top: number, height = 20): MarkerRect => ({
+  top,
+  height,
+  kind: "ins",
+});
+const del = (top: number, height = 20): MarkerRect => ({
+  top,
+  height,
+  kind: "del",
+});
+const block = (top: number, bottom: number, kind: MarkerKind | "mixed") => ({
+  top,
+  bottom,
+  kind,
+  elements: [],
+  ranges: [],
+  operations: [],
+});
 
 /**
  * The counter, the current-block highlight and the view modes need geometry, and happy-dom has
@@ -19,27 +34,47 @@ const block = (top: number, bottom: number, kind: MarkerKind | "mixed") => ({ to
  * plotting/navigation/highlight path headlessly. (Real-layout coverage is the Playwright suite's.)
  */
 function fakeRect(top: number, height: number): () => DOMRect {
-  return () => ({ top, height, bottom: top + height, left: 0, right: 10, width: 10, x: 0, y: top }) as DOMRect;
+  return () =>
+    ({
+      top,
+      height,
+      bottom: top + height,
+      left: 0,
+      right: 10,
+      width: 10,
+      x: 0,
+      y: top,
+    }) as DOMRect;
 }
 
-function withFakedLayout(markers: { kind: MarkerKind; top: number; height: number }[]): {
+function withFakedLayout(
+  markers: { kind: MarkerKind; top: number; height: number }[],
+): {
   container: HTMLElement;
   frame: HTMLIFrameElement;
   doc: Document;
 } {
-  document.body.innerHTML = '<div id="app"><div class="redline-content"></div></div>';
+  document.body.innerHTML =
+    '<div id="app"><div class="redline-content"></div></div>';
   const container = document.querySelector<HTMLElement>(".redline-content")!;
   const frame = document.createElement("iframe");
   container.appendChild(frame);
   const doc = frame.contentDocument!;
   doc.body.innerHTML = markers
-    .map((m) => (m.kind === "ins" ? '<ins class="redline">new</ins>' : '<del class="redline">old</del>'))
+    .map((m) =>
+      m.kind === "ins"
+        ? '<ins class="redline" data-diff-op="op-i" data-diff-node="insert">new</ins>'
+        : '<del class="redline" data-diff-op="op-d" data-diff-node="delete">old</del>',
+    )
     .join("<p>filler</p>");
   Object.defineProperty(doc.documentElement, "getBoundingClientRect", {
     configurable: true,
     value: fakeRect(0, 5000),
   });
-  Object.defineProperty(doc.documentElement, "scrollHeight", { configurable: true, value: 5000 });
+  Object.defineProperty(doc.documentElement, "scrollHeight", {
+    configurable: true,
+    value: 5000,
+  });
   [...doc.querySelectorAll("ins.redline, del.redline")].forEach((el, index) => {
     Object.defineProperty(el, "getBoundingClientRect", {
       configurable: true,
@@ -54,12 +89,20 @@ const twoBlocks = [
   { kind: "del" as MarkerKind, top: 900, height: 20 },
 ];
 
-const countText = () => document.querySelector(".redline-nav-count")?.textContent;
-const marked = (doc: Document) => [...doc.querySelectorAll("[data-redline-current]")].map((el) => el.textContent);
+const countText = () =>
+  document.querySelector(".redline-nav-count")?.textContent;
+const marked = (doc: Document) =>
+  [...doc.querySelectorAll("[data-redline-current]")].map(
+    (el) => el.textContent,
+  );
 
 /** Every controller must be disposed: each one adds a keydown listener to the SHELL window. */
 const installed: MinimapController[] = [];
-function install(container: HTMLElement, frame: HTMLIFrameElement, options = {}): MinimapController {
+function install(
+  container: HTMLElement,
+  frame: HTMLIFrameElement,
+  options = {},
+): MinimapController {
   const controller = installMinimap(container, frame, options);
   installed.push(controller);
   return controller;
@@ -160,11 +203,13 @@ describe("change counter", () => {
 
   it("shows a zero total when nothing measures", () => {
     // No stubbed geometry: every marker is 0×0, exactly the collapsed-markers case.
-    document.body.innerHTML = '<div id="app"><div class="redline-content"></div></div>';
+    document.body.innerHTML =
+      '<div id="app"><div class="redline-content"></div></div>';
     const container = document.querySelector<HTMLElement>(".redline-content")!;
     const frame = document.createElement("iframe");
     container.appendChild(frame);
-    frame.contentDocument!.body.innerHTML = '<ins class="redline">new</ins>';
+    frame.contentDocument!.body.innerHTML =
+      '<ins class="redline" data-diff-op="op-i" data-diff-node="insert">new</ins>';
     install(container, frame);
     expect(countText()).toBe("– / 0");
   });
@@ -243,7 +288,9 @@ describe("view modes", () => {
     // An insertion-only diff has no deletions at all, so Original is empty by nature, not by
     // anyone hiding anything.
     const onVisibility = vi.fn();
-    const { container, frame } = withFakedLayout([{ kind: "ins", top: 0, height: 20 }]);
+    const { container, frame } = withFakedLayout([
+      { kind: "ins", top: 0, height: 20 },
+    ]);
     const controller = install(container, frame, { onVisibility });
     controller.setMode("original");
     expect(onVisibility).toHaveBeenLastCalledWith(true);
@@ -264,8 +311,14 @@ describe("view modes", () => {
   it("the 1/2/3 keys switch mode", () => {
     const { container, frame, doc } = withFakedLayout(twoBlocks);
     install(container, frame);
-    for (const [key, mode] of [["1", "original"], ["3", "final"], ["2", "redline"]] as const) {
-      window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    for (const [key, mode] of [
+      ["1", "original"],
+      ["3", "final"],
+      ["2", "redline"],
+    ] as const) {
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", { key, bubbles: true }),
+      );
       expect(doc.documentElement.dataset.redlineMode).toBe(mode);
     }
   });
@@ -285,7 +338,10 @@ describe("view modes", () => {
 
     // Hiding the insertions in happy-dom means dropping their stubbed geometry.
     for (const el of doc.querySelectorAll("ins.redline")) {
-      Object.defineProperty(el, "getBoundingClientRect", { configurable: true, value: fakeRect(0, 0) });
+      Object.defineProperty(el, "getBoundingClientRect", {
+        configurable: true,
+        value: fakeRect(0, 0),
+      });
     }
     controller.setMode("original");
     expect(countText()).toBe("1 / 1");

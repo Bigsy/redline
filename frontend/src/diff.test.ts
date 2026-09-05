@@ -1,3 +1,4 @@
+import type { EngineSuccess } from "./engine-protocol";
 import { describe, expect, it } from "vitest";
 
 import {
@@ -9,7 +10,8 @@ import {
   runEngine,
   sanitizeReviewedDocument,
 } from "./diff";
-import htmldiff from "./vendor/htmldiff";
+import { compareBodies, renderMerged } from "redline-engine";
+import { MARKER_SELECTOR, projectBody } from "./review-document";
 
 function doc(body: string, head = ""): string {
   return `<!doctype html><html><head>${head}</head><body>${body}</body></html>`;
@@ -17,7 +19,7 @@ function doc(body: string, head = ""): string {
 
 function markers(html: string): Element[] {
   const parsed = new DOMParser().parseFromString(html, "text/html");
-  return [...parsed.querySelectorAll("ins.redline, del.redline")];
+  return [...parsed.querySelectorAll(MARKER_SELECTOR)];
 }
 
 /**
@@ -25,7 +27,7 @@ function markers(html: string): Element[] {
  * regex without a tag-name boundary, so an atomic tag name that prefixes another tag name
  * (`head` -> `<header>`, `video` -> `<video-js>`, `style` -> `<style-guide>`) swallows everything
  * to EOF as one token and the diff silently emits the after document with ZERO markers. The
- * vendored engine patches the regex with `(?=[\s/>])`; these must keep producing markers.
+ * Published-engine exact tag matching must retain these regressions.
  */
 describe("atomic-tag boundary regressions", () => {
   it("marks changes in documents using <header>", async () => {
@@ -46,9 +48,14 @@ describe("atomic-tag boundary regressions", () => {
     expect(markers(await diffHtml(before, after)).length).toBeGreaterThan(0);
   });
 
-  it("patches the engine's DEFAULT atomic-tag list too (head must not match <header>)", async () => {
-    // Engine-level: no explicit atomic tags, so the default list (which includes `head`) is used.
-    const merged = htmldiff("<header>same</header><p>old</p>", "<header>same</header><p>new</p>");
+  it("default tag handling does not swallow changes after header", async () => {
+    // Engine-level exact tag matching must not swallow following changed content.
+    const result = compareBodies({
+      beforeHtml: "<header>same</header><p>old</p>",
+      afterHtml: "<header>same</header><p>new</p>",
+    });
+    if (result.outcome !== "success") throw new Error(result.outcome);
+    const merged = renderMerged(result.comparison).html;
     expect(merged).toContain("<ins");
     expect(merged).toContain("<del");
   });
@@ -72,12 +79,12 @@ describe("truthfulness-relevant behaviour", () => {
     expect(markers(await diffHtml(same, same))).toHaveLength(0);
   });
 
-  it("produces NO markers for attribute-only changes (known engine limitation)", async () => {
+  it("marks attribute-only replacements", async () => {
     // Documents the limitation the viewer's "changed but unrepresentable" state exists for:
     // if this ever starts producing markers, the engine improved — revisit the banner logic.
     const before = doc('<p class="old">same text</p>');
     const after = doc('<p class="new">same text</p>');
-    expect(markers(await diffHtml(before, after))).toHaveLength(0);
+    expect(markers(await diffHtml(before, after)).length).toBeGreaterThan(0);
   });
 
   it("produces NO markers for head-only changes (known engine limitation)", async () => {
@@ -90,7 +97,9 @@ describe("truthfulness-relevant behaviour", () => {
 describe("sanitization (defense-in-depth behind the sandbox)", () => {
   it("strips <script> elements and inline handlers from the redline", async () => {
     const before = doc("<p>old</p>");
-    const after = doc('<script>alert(1)</script><p onclick="alert(2)" class="x">new</p>');
+    const after = doc(
+      '<script>alert(1)</script><p onclick="alert(2)" class="x">new</p>',
+    );
     const redline = await diffHtml(before, after);
     const parsed = new DOMParser().parseFromString(redline, "text/html");
     expect(parsed.querySelector("script")).toBeNull();
@@ -126,10 +135,13 @@ describe("sanitization (defense-in-depth behind the sandbox)", () => {
     // Without the attribute strip: the untouched <li> is painted and counted as a deletion, and
     // reconstructSide drops it from the before side, so bodyUnderReported fires too.
     const faked = '<ul><li data-diff-node="del">untouched</li></ul>';
-    const result = await buildRedline(doc(`${faked}<p>old text</p>`), doc(`${faked}<p>new text</p>`));
+    const result = await buildRedline(
+      doc(`${faked}<p>old text</p>`),
+      doc(`${faked}<p>new text</p>`),
+    );
     const parsed = new DOMParser().parseFromString(result.html, "text/html");
 
-    expect(parsed.querySelectorAll("[data-diff-node]")).toHaveLength(0);
+    expect(parsed.querySelectorAll("li[data-diff-node]")).toHaveLength(0);
     expect(parsed.querySelector("li")!.textContent).toBe("untouched");
     expect(result.bodyUnderReported).toBe(false);
     // The real change is still marked.
@@ -138,11 +150,13 @@ describe("sanitization (defense-in-depth behind the sandbox)", () => {
 
   it("a document cannot preselect a view mode and hide the other side's changes", async () => {
     const result = await buildRedline(
-      '<!doctype html><html><head></head><body><p>old text</p></body></html>',
+      "<!doctype html><html><head></head><body><p>old text</p></body></html>",
       '<!doctype html><html data-redline-mode="final"><head></head><body><p>new text</p></body></html>',
     );
     const parsed = new DOMParser().parseFromString(result.html, "text/html");
-    expect(parsed.documentElement.hasAttribute("data-redline-mode")).toBe(false);
+    expect(parsed.documentElement.hasAttribute("data-redline-mode")).toBe(
+      false,
+    );
     // The deletion the forged mode would have hidden is present and marked.
     expect(parsed.querySelector("del.redline")).not.toBeNull();
   });
@@ -151,24 +165,36 @@ describe("sanitization (defense-in-depth behind the sandbox)", () => {
     // CSP policies INTERSECT: a reviewed `style-src 'none'` disables the injected REDLINE_CSS
     // entirely — marker colours, the visibility pins and the view-mode rules — and inserting ours
     // first does not help. The frame's policy is ours to set.
-    const hostile = '<meta HTTP-EQUIV=" Content-Security-Policy " content="style-src \'none\'">';
-    const result = await buildRedline(doc("<p>old text</p>"), doc("<p>new text</p>", hostile));
+    const hostile =
+      '<meta HTTP-EQUIV=" Content-Security-Policy " content="style-src \'none\'">';
+    const result = await buildRedline(
+      doc("<p>old text</p>"),
+      doc("<p>new text</p>", hostile),
+    );
     const parsed = new DOMParser().parseFromString(result.html, "text/html");
-    const policies = [...parsed.querySelectorAll("meta[http-equiv]")].map((m) => m.getAttribute("content"));
+    const policies = [...parsed.querySelectorAll("meta[http-equiv]")].map((m) =>
+      m.getAttribute("content"),
+    );
 
     // Exactly one policy survives: the one assembleRedline adds after sanitization.
     expect(policies).toEqual([DOC_CSP]);
-    expect(parsed.querySelector("style")?.textContent).toContain("ins.redline");
+    expect(parsed.querySelector("style")?.textContent).toContain(
+      "[data-diff-node]",
+    );
   });
 
   it("a document cannot pass its own ins/del off as engine markers", async () => {
     // A forged marker is painted and counted as a change, and in original/final mode it hides
     // content that really is in that version of the document.
-    const forged = '<p>keep <del class="redline">forged</del> and <ins class="keep redline">also</ins></p>';
-    const result = await buildRedline(doc(`${forged}<p>old text</p>`), doc(`${forged}<p>new text</p>`));
+    const forged =
+      '<p>keep <del class="redline">forged</del> and <ins class="keep redline">also</ins></p>';
+    const result = await buildRedline(
+      doc(`${forged}<p>old text</p>`),
+      doc(`${forged}<p>new text</p>`),
+    );
     const parsed = new DOMParser().parseFromString(result.html, "text/html");
 
-    expect(parsed.querySelectorAll("del.redline, ins.redline")).toHaveLength(2); // the real change only
+    expect(parsed.querySelectorAll(MARKER_SELECTOR)).toHaveLength(2); // the real change only
     expect(parsed.querySelector("del")!.textContent).toBe("forged"); // the text itself is untouched
     expect(parsed.querySelector("ins.keep")).not.toBeNull(); // and its other classes survive
     expect(result.bodyUnderReported).toBe(false);
@@ -176,36 +202,48 @@ describe("sanitization (defense-in-depth behind the sandbox)", () => {
 
   it("removes meta refresh directives (sandbox does NOT block self-navigation)", async () => {
     const parsed = new DOMParser().parseFromString(
-      doc("<p>x</p>", '<meta HTTP-EQUIV=" Refresh " content="0; url=https://evil.example/">' +
-        '<meta http-equiv="content-type" content="text/html">'),
+      doc(
+        "<p>x</p>",
+        '<meta HTTP-EQUIV=" Refresh " content="0; url=https://evil.example/">' +
+          '<meta http-equiv="content-type" content="text/html">',
+      ),
       "text/html",
     );
     sanitizeReviewedDocument(parsed);
-    const equivs = [...parsed.querySelectorAll("meta[http-equiv]")].map((m) => m.getAttribute("http-equiv"));
+    const equivs = [...parsed.querySelectorAll("meta[http-equiv]")].map((m) =>
+      m.getAttribute("http-equiv"),
+    );
     expect(equivs).toEqual(["content-type"]);
   });
 });
 
 describe("view-mode CSS (the shell's Original/Redline/Final control has nothing to drive without it)", () => {
   const styleOf = async () => {
-    const result = await buildRedline(doc("<p>old text</p>"), doc("<p>new text</p>"));
+    const result = await buildRedline(
+      doc("<p>old text</p>"),
+      doc("<p>new text</p>"),
+    );
     const parsed = new DOMParser().parseFromString(result.html, "text/html");
     return parsed.querySelector("style")!.textContent ?? "";
   };
 
-  it("hides each side in the mode that should not show it", async () => {
-    const css = await styleOf();
-    expect(css).toContain('html[data-redline-mode="original"] ins.redline');
-    expect(css).toContain('html[data-redline-mode="original"] [data-diff-node="ins"]');
-    expect(css).toContain('html[data-redline-mode="final"] del.redline');
-    expect(css).toContain('html[data-redline-mode="final"] [data-diff-node="del"]');
-  });
-
-  it("resets the marker colour on the surviving side, not just its background", async () => {
-    // The `color` pin exists for the light marker backgrounds; once the background is transparent
-    // it painted near-black text onto a dark document's canvas.
-    const css = await styleOf();
-    expect(css).toMatch(/html\[data-redline-mode="original"\] del\.redline,[\s\S]*?color: inherit !important/);
+  it("projects each side without marker styling or formatting shells", async () => {
+    const result = await buildRedline(
+      doc("<p>hello world</p>"),
+      doc("<p>hello <b>world</b></p>"),
+    );
+    for (const [side, expected] of [
+      ["before", "<p>hello world</p>"],
+      ["after", "<p>hello <b>world</b></p>"],
+    ] as const) {
+      const body = new DOMParser().parseFromString(
+        result.html,
+        "text/html",
+      ).body;
+      projectBody(body, side);
+      expect(body.innerHTML).toBe(expected);
+      expect(body.querySelector(MARKER_SELECTOR)).toBeNull();
+    }
   });
 
   it("marks the current change block without spending the outline the markers already use", async () => {
@@ -214,10 +252,13 @@ describe("view-mode CSS (the shell's Original/Redline/Final control has nothing 
 });
 
 describe("under-reporting detection (mixed changes must not be silent)", () => {
-  it("flags attribute changes riding along with marked text changes", async () => {
-    const result = await buildRedline(doc('<p class="old">old text</p>'), doc('<p class="new">new text</p>'));
+  it("marks attribute changes alongside text", async () => {
+    const result = await buildRedline(
+      doc('<p class="old">old text</p>'),
+      doc('<p class="new">new text</p>'),
+    );
     expect(result.markerCount).toBeGreaterThan(0);
-    expect(result.bodyUnderReported).toBe(true);
+    expect(result.bodyUnderReported).toBe(false);
     expect(result.headDiffers).toBe(false);
   });
 
@@ -231,14 +272,20 @@ describe("under-reporting detection (mixed changes must not be silent)", () => {
     expect(result.bodyUnderReported).toBe(false);
   });
 
-  it("flags attribute-only changes (zero markers)", async () => {
-    const result = await buildRedline(doc('<p class="old">same text</p>'), doc('<p class="new">same text</p>'));
-    expect(result.markerCount).toBe(0);
-    expect(result.bodyUnderReported).toBe(true);
+  it("marks attribute-only changes completely", async () => {
+    const result = await buildRedline(
+      doc('<p class="old">same text</p>'),
+      doc('<p class="new">same text</p>'),
+    );
+    expect(result.markerCount).toBeGreaterThan(0);
+    expect(result.bodyUnderReported).toBe(false);
   });
 
   it("does not flag a pure text change", async () => {
-    const result = await buildRedline(doc("<p>old text stays</p>"), doc("<p>new text stays</p>"));
+    const result = await buildRedline(
+      doc("<p>old text stays</p>"),
+      doc("<p>new text stays</p>"),
+    );
     expect(result.markerCount).toBeGreaterThan(0);
     expect(result.headDiffers).toBe(false);
     expect(result.bodyUnderReported).toBe(false);
@@ -246,17 +293,19 @@ describe("under-reporting detection (mixed changes must not be silent)", () => {
 
   it("does not flag added block elements (engine annotates the tag instead of wrapping)", async () => {
     const result = await buildRedline(
-      doc("<ol><li>a</li></ol><table><tbody><tr><td>1</td></tr></tbody></table>"),
-      doc("<ol><li>a</li><li>b</li></ol><table><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>"),
+      doc(
+        "<ol><li>a</li></ol><table><tbody><tr><td>1</td></tr></tbody></table>",
+      ),
+      doc(
+        "<ol><li>a</li><li>b</li></ol><table><tbody><tr><td>1</td></tr><tr><td>2</td></tr></tbody></table>",
+      ),
     );
     expect(result.markerCount).toBeGreaterThan(0);
     expect(result.bodyUnderReported).toBe(false);
-    // Document the two shapes this test exists for: the row is ANNOTATED in place, while the
-    // list item takes the tag-alignment-shift shape (tags matched as equal, only text wrapped,
-    // leaving a phantom empty <li> in the naive reconstruction).
+    // Both row and list item changes annotate the actual structural element.
     const parsed = new DOMParser().parseFromString(result.html, "text/html");
-    expect(parsed.querySelector('tr[data-diff-node="ins"]')).not.toBeNull();
-    expect(parsed.querySelector("li ins.redline")).not.toBeNull();
+    expect(parsed.querySelector('tr[data-diff-node="insert"]')).not.toBeNull();
+    expect(parsed.querySelector('li[data-diff-node="insert"]')).not.toBeNull();
   });
 
   it("does not flag removed block elements", async () => {
@@ -269,19 +318,19 @@ describe("under-reporting detection (mixed changes must not be silent)", () => {
   });
 
   it("ignores comment-only differences (the tokenizer drops comments anyway)", async () => {
-    const result = await buildRedline(doc("<!-- reviewer note --><p>same</p>"), doc("<p>same</p>"));
+    const result = await buildRedline(
+      doc("<!-- reviewer note --><p>same</p>"),
+      doc("<p>same</p>"),
+    );
     expect(result.markerCount).toBe(0);
     expect(result.headDiffers).toBe(false);
     expect(result.bodyUnderReported).toBe(false);
   });
 
-  it("an unmarkable bare-void insertion (<hr>) surfaces via the zero-marker state, unflagged", async () => {
-    // The engine emits the inserted <hr> with neither a wrapper nor an annotation. It is NOT
-    // flagged as under-reported (empty attribute-less elements are comparison noise — see
-    // normalizeForComparison), but with zero markers and differing inputs the viewer still
-    // reaches the "changed but unrepresentable" banner, so the change is never silent.
+  it("marks a bare-void insertion (<hr>)", async () => {
+    // Void insertions are structural markers and must reconstruct exactly.
     const result = await buildRedline(doc("<p>x</p>"), doc("<p>x</p><hr>"));
-    expect(result.markerCount).toBe(0);
+    expect(result.markerCount).toBeGreaterThan(0);
     expect(result.bodyUnderReported).toBe(false);
   });
 
@@ -308,20 +357,26 @@ describe("formatting-only detection (whitespace/CRLF edits are not under-reporti
       doc("\n  <p>same text</p>\n  <p>more</p>\n"),
       doc("\n\t\t\t<p>same text</p>\n\n\t\t\t<p>more</p>\n\n"),
     );
-    expect(result.markerCount).toBe(0);
+    expect(result.markerCount).toBeGreaterThan(0);
     expect(result.formattingOnly).toBe(true);
   });
 
   it("does not flag whitespace appearing where there was none (it can change inline layout)", async () => {
     // Collapsing runs deliberately does not erase a run entirely: `<b>a</b><i>b</i>` and
     // `<b>a</b> <i>b</i>` render differently, so this stays the conservative warning state.
-    const result = await buildRedline(doc("<p><b>a</b><i>b</i></p>"), doc("<p><b>a</b> <i>b</i></p>"));
+    const result = await buildRedline(
+      doc("<p><b>a</b><i>b</i></p>"),
+      doc("<p><b>a</b> <i>b</i></p>"),
+    );
     expect(result.formattingOnly).toBe(false);
   });
 
   it("flags line-ending-only changes (DOMParser normalises CRLF, so the bodies collapse equal)", async () => {
     const body = "<p>line one</p>\n<p>line two</p>";
-    const result = await buildRedline(doc(body), doc(body.replace(/\n/g, "\r\n")));
+    const result = await buildRedline(
+      doc(body),
+      doc(body.replace(/\n/g, "\r\n")),
+    );
     expect(result.formattingOnly).toBe(true);
   });
 
@@ -334,8 +389,11 @@ describe("formatting-only detection (whitespace/CRLF edits are not under-reporti
   });
 
   it("does not flag reindented <pre> content (whitespace there is rendered verbatim)", async () => {
-    const result = await buildRedline(doc("<pre>a\n  b</pre>"), doc("<pre>a\nb</pre>"));
-    expect(result.markerCount).toBe(0); // the engine cannot mark it — the banner is all there is
+    const result = await buildRedline(
+      doc("<pre>a\n  b</pre>"),
+      doc("<pre>a\nb</pre>"),
+    );
+    expect(result.markerCount).toBeGreaterThan(0); // preformatted changes are atomic replacements
     expect(result.formattingOnly).toBe(false);
   });
 
@@ -356,69 +414,99 @@ describe("formatting-only detection (whitespace/CRLF edits are not under-reporti
   });
 
   it("does not flag attribute-only changes", async () => {
-    const result = await buildRedline(doc('<p class="old">same text</p>'), doc('<p class="new">same text</p>'));
-    expect(result.markerCount).toBe(0);
+    const result = await buildRedline(
+      doc('<p class="old">same text</p>'),
+      doc('<p class="new">same text</p>'),
+    );
+    expect(result.markerCount).toBeGreaterThan(0);
     expect(result.formattingOnly).toBe(false);
   });
 
   it("does not flag head-only changes", async () => {
-    const result = await buildRedline(doc("<p>x</p>", "<title>old</title>"), doc("<p>x</p>", "<title>new</title>"));
+    const result = await buildRedline(
+      doc("<p>x</p>", "<title>old</title>"),
+      doc("<p>x</p>", "<title>new</title>"),
+    );
     expect(result.formattingOnly).toBe(false);
   });
 
   it("does not flag real text changes", async () => {
-    const result = await buildRedline(doc("<p>old text</p>"), doc("<p>new text</p>"));
+    const result = await buildRedline(
+      doc("<p>old text</p>"),
+      doc("<p>new text</p>"),
+    );
     expect(result.formattingOnly).toBe(false);
   });
 });
 
 describe("engine time budget (a big document must not freeze the pane)", () => {
   /** An engine run that never finishes, so only the budget or a cancel can end it. */
-  function stalledEngine(): { execute: () => { result: Promise<string>; terminate: () => void }; terminated: () => boolean } {
+  function stalledEngine(): {
+    execute: () => { result: Promise<EngineSuccess>; terminate: () => void };
+    terminated: () => boolean;
+  } {
     let terminated = false;
     return {
-      execute: () => ({ result: new Promise<string>(() => {}), terminate: () => (terminated = true) }),
+      execute: () => ({
+        result: new Promise<EngineSuccess>(() => {}),
+        terminate: () => (terminated = true),
+      }),
       terminated: () => terminated,
     };
   }
 
-  it("resolves through the inline path (no Worker in happy-dom)", async () => {
+  it("resolves through the explicit test worker", async () => {
     const merged = await runEngine("<p>old text</p>", "<p>new text</p>");
-    expect(merged).toContain("ins");
-    expect(merged).toContain("new");
+    expect(merged.html).toContain("ins");
+    expect(merged.html).toContain("new");
   });
 
-  it("partitions a large aligned document so sparse edits finish inside the normal budget", async () => {
+  it("compares a whole large document within the normal budget", async () => {
     const paragraphs = 700;
     const makeBody = (edited: boolean): string =>
       Array.from({ length: paragraphs }, (_, i) => {
-        const text = edited && i % 50 === 0
-          ? `Paragraph ${i} was edited to exercise the large document fast path.`
-          : `Paragraph ${i} is unchanged synthetic prose with enough content to make the whole document large.`;
+        const text =
+          edited && i % 50 === 0
+            ? `Paragraph ${i} was edited to exercise the whole-body comparison.`
+            : `Paragraph ${i} is unchanged synthetic prose with enough content to make the whole document large.`;
         return `<p>${text} <b>Bold segment ${i}</b> and <a href="#s${i}">link ${i}</a>.</p>\n`;
       }).join("");
 
-    const result = await buildRedline(doc(makeBody(false)), doc(makeBody(true)));
+    const result = await buildRedline(
+      doc(makeBody(false)),
+      doc(makeBody(true)),
+    );
     const rendered = new DOMParser().parseFromString(result.html, "text/html");
 
-    expect(result.markerCount).toBeGreaterThanOrEqual(Math.ceil(paragraphs / 50) * 2);
+    expect(result.markerCount).toBeGreaterThanOrEqual(
+      Math.ceil(paragraphs / 50) * 2,
+    );
     expect(result.bodyUnderReported).toBe(false);
     expect(
-      rendered.body.querySelectorAll("p")[650].querySelector("ins.redline")?.textContent,
-    ).toContain("was edited");
+      [
+        ...rendered.body
+          .querySelectorAll("p")[650]
+          .querySelectorAll('[data-diff-node="insert"]'),
+      ]
+        .map((el) => el.textContent)
+        .join(""),
+    ).toContain("wasedited");
   });
 
   it("rejects with DiffTimeoutError once the budget is spent, and stops the run", async () => {
     const engine = stalledEngine();
-    await expect(runEngine("a", "b", { timeoutMs: 5, execute: engine.execute })).rejects.toBeInstanceOf(
-      DiffTimeoutError,
-    );
+    await expect(
+      runEngine("a", "b", { timeoutMs: 5, execute: engine.execute }),
+    ).rejects.toBeInstanceOf(DiffTimeoutError);
     expect(engine.terminated()).toBe(true);
   });
 
   it("carries the budget it gave up on, for the banner text", async () => {
     const engine = stalledEngine();
-    const error = await runEngine("a", "b", { timeoutMs: 7, execute: engine.execute }).catch((e) => e);
+    const error = await runEngine("a", "b", {
+      timeoutMs: 7,
+      execute: engine.execute,
+    }).catch((e) => e);
     expect(error).toBeInstanceOf(DiffTimeoutError);
     expect((error as DiffTimeoutError).timeoutMs).toBe(7);
   });
@@ -426,7 +514,11 @@ describe("engine time budget (a big document must not freeze the pane)", () => {
   it("rejects with DiffCancelledError when the caller aborts, and stops the run", async () => {
     const engine = stalledEngine();
     const controller = new AbortController();
-    const running = runEngine("a", "b", { timeoutMs: 60_000, signal: controller.signal, execute: engine.execute });
+    const running = runEngine("a", "b", {
+      timeoutMs: 60_000,
+      signal: controller.signal,
+      execute: engine.execute,
+    });
     controller.abort();
     await expect(running).rejects.toBeInstanceOf(DiffCancelledError);
     expect(engine.terminated()).toBe(true);
@@ -435,22 +527,32 @@ describe("engine time budget (a big document must not freeze the pane)", () => {
   it("an already-aborted signal never starts waiting", async () => {
     const engine = stalledEngine();
     await expect(
-      runEngine("a", "b", { timeoutMs: 60_000, signal: AbortSignal.abort(), execute: engine.execute }),
+      runEngine("a", "b", {
+        timeoutMs: 60_000,
+        signal: AbortSignal.abort(),
+        execute: engine.execute,
+      }),
     ).rejects.toBeInstanceOf(DiffCancelledError);
-    expect(engine.terminated()).toBe(true);
+    expect(engine.terminated()).toBe(false); // No worker was created.
   });
 
   it("a completed run is not overtaken by a later abort", async () => {
     const controller = new AbortController();
-    const merged = await runEngine("<p>a</p>", "<p>b</p>", { signal: controller.signal });
+    const merged = await runEngine("<p>a</p>", "<p>b</p>", {
+      signal: controller.signal,
+    });
     controller.abort();
-    expect(merged).toContain("ins");
+    expect(merged.html).toContain("ins");
   });
 });
 
 describe("document assembly", () => {
   it("injects the CSP meta first, then <base href>", async () => {
-    const redline = await diffHtml(doc("<p>a</p>"), doc("<p>b</p>"), "http://host/doc/s1/");
+    const redline = await diffHtml(
+      doc("<p>a</p>"),
+      doc("<p>b</p>"),
+      "http://host/doc/s1/",
+    );
     const parsed = new DOMParser().parseFromString(redline, "text/html");
     const [first, second] = [...parsed.head.children];
     expect(first.getAttribute("http-equiv")).toBe("Content-Security-Policy");
@@ -463,9 +565,13 @@ describe("document assembly", () => {
   it("pins the marker styles against reviewed CSS (!important on visibility-critical props)", async () => {
     const redline = await diffHtml(doc("<p>a</p>"), doc("<p>b</p>"));
     const parsed = new DOMParser().parseFromString(redline, "text/html");
-    const css = [...parsed.querySelectorAll("style")].map((s) => s.textContent ?? "").join("\n");
+    const css = [...parsed.querySelectorAll("style")]
+      .map((s) => s.textContent ?? "")
+      .join("\n");
     expect(css).toContain("visibility: visible !important");
-    expect(css).toMatch(/ins\.redline \{ background: #d3f2d3 !important/);
+    expect(css).toMatch(
+      /\[data-diff-node="insert"\] \{ background: #d3f2d3 !important/,
+    );
   });
 
   it("keeps the after side's head and injects the redline CSS", async () => {
@@ -475,8 +581,10 @@ describe("document assembly", () => {
     );
     const parsed = new DOMParser().parseFromString(redline, "text/html");
     expect(parsed.title).toBe("new");
-    const styles = [...parsed.querySelectorAll("style")].map((s) => s.textContent ?? "");
-    expect(styles.some((s) => s.includes("ins.redline"))).toBe(true);
+    const styles = [...parsed.querySelectorAll("style")].map(
+      (s) => s.textContent ?? "",
+    );
+    expect(styles.some((s) => s.includes("[data-diff-node]"))).toBe(true);
     expect(styles.some((s) => s.includes("color:red"))).toBe(true);
   });
 });

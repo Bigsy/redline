@@ -1,0 +1,14 @@
+{
+  "path": "build/distributions/redline-0.3.0.zip",
+  "sha256": "064018735427d7b757440611a7c1bf98978a67c80218b88cbb344d3c41df9aa2",
+  "notices": [
+    "third-party/diff-LICENSE",
+    "third-party/entities-LICENSE",
+    "third-party/parse5-LICENSE",
+    "third-party/redline-engine-LICENSE",
+    "third-party/redline-engine-NOTICES.md"
+  ],
+  "assetsMatch": true,
+  "pluginVersion": "0.3.0",
+  "versionedChangeNotesMatch": true
+}

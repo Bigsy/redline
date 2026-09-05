@@ -1,12 +1,18 @@
+import { MARKER_SELECTOR, projectBody, reviewTargets } from "./review-document";
 import {
   buildRedline,
+  recordTiming,
   DEFAULT_ENGINE_TIMEOUT_MS,
   DiffCancelledError,
   DiffTimeoutError,
   type EngineOptions,
 } from "./diff";
 import { installFindBar, type FindBar } from "./findbar";
-import { installMinimap, type MinimapController, type ViewMode } from "./minimap";
+import {
+  installMinimap,
+  type MinimapController,
+  type ViewMode,
+} from "./minimap";
 
 /**
  * Contract with the Kotlin side (RedlineDiffViewer), all optional so the shell runs standalone:
@@ -31,14 +37,7 @@ declare global {
   }
 }
 
-/**
- * Documents bigger than this (both sides together, in characters) skip the engine entirely.
- *
- * The engine is quadratic in token count: measured on a synthetic repetitive pair, 65 KB diffs in
- * 1.2 s, 262 KB in 72 s, and 650 KB did not finish in 5 minutes. So this is a ceiling, not a
- * promise — the time budget below is what actually protects the pane; this only avoids making the
- * user wait 15 s to be told what was obvious from the size.
- */
+/** Host input policy in combined UTF-16 string units; worker output/work caps also apply. */
 const SIZE_LIMIT = 2_000_000;
 
 /**
@@ -98,8 +97,8 @@ let viewMode: ViewMode = "redline";
  * The viewer always states which truthfulness state it is showing:
  *   0. one-sided (added/deleted)-> the side that exists + info banner (nothing to merge)
  *   1. identical inputs         -> after side + "no changes" banner
- *   2. marked changes           -> redline document; if the head or attributes ALSO changed
- *                                  invisibly, a banner says the highlights are incomplete
+ *   2. marked changes           -> merged/projection document; head changes and coarse
+ *                                  replacements have separate explanations
  *   3. changed, unrepresentable -> after side + warning banner pointing at the text diff
  *                                  (or, for whitespace/line-ending-only edits, an info banner
  *                                  saying the rendered document is unchanged)
@@ -138,7 +137,10 @@ function showBanner(kind: "info" | "warning", text: string): HTMLElement {
  * mean the reviewed document is fine and only the comparison was abandoned.
  */
 function tooLargeMessage(timeoutMs?: number): string {
-  const gaveUp = timeoutMs === undefined ? "" : ` (gave up after ${Math.round(timeoutMs / 1000)} s)`;
+  const gaveUp =
+    timeoutMs === undefined
+      ? ""
+      : ` (gave up after ${Math.round(timeoutMs / 1000)} s)`;
   return (
     `This document is too large for the rendered redline${gaveUp} — ` +
     "showing the new version; use the text diff."
@@ -159,22 +161,28 @@ function showComputingBanner(onCancel: () => void): HTMLElement {
 
 async function fetchSide(url: string): Promise<string> {
   const response = await fetch(url);
-  if (!response.ok) throw new Error(`fetching ${url} failed: HTTP ${response.status}`);
+  if (!response.ok)
+    throw new Error(`fetching ${url} failed: HTTP ${response.status}`);
   return response.text();
 }
 
 /**
  * `timeoutMs` is the engine time budget, set from the viewer URL's `?diffTimeoutMs=` (the e2e
  * suite uses it to force the give-up state); `execute` is diff.ts's test seam, which [boot] never
- * sets — the unit tests need it to reach the timeout and cancel states, because the inline engine
- * they run against cannot be interrupted.
+ * sets — unit tests can inject a pending executor to exercise termination.
  */
 export type BootOptions = Pick<EngineOptions, "timeoutMs" | "execute">;
 
-export async function bootSession(session: string, options: BootOptions = {}): Promise<void> {
+export async function bootSession(
+  session: string,
+  options: BootOptions = {},
+): Promise<void> {
   // Absolute base: the redline is written into an about:blank frame, whose base URL is inherited
   // and murky — relative URLs must not depend on it.
-  docBase = new URL(`/doc/${encodeURIComponent(session)}/`, window.location.href).href;
+  docBase = new URL(
+    `/doc/${encodeURIComponent(session)}/`,
+    window.location.href,
+  ).href;
   bootOptions = options;
 
   // The bridge may be injected before or after the shell finishes booting; __redlineFlush lets
@@ -198,7 +206,8 @@ export async function bootSession(session: string, options: BootOptions = {}): P
  * current may not exist any more anyway.
  */
 async function reload(): Promise<void> {
-  if (pendingScrollTop === null) pendingScrollTop = currentFrame?.contentWindow?.scrollY ?? 0;
+  if (pendingScrollTop === null)
+    pendingScrollTop = currentFrame?.contentWindow?.scrollY ?? 0;
   const frame = await render();
   // A later reload took over while this one was in flight; it owns the offset and the restore.
   if (frame !== currentFrame) return;
@@ -218,7 +227,12 @@ async function reload(): Promise<void> {
  * fires with the settled height for both a written document's subresources and an `src`
  * navigation, so: once now, for documents with nothing to wait for, and again when it settles.
  */
+const pendingScrollRestores = new WeakMap<HTMLIFrameElement, () => void>();
+
 function restoreScroll(frame: HTMLIFrameElement, top: number): void {
+  const previous = pendingScrollRestores.get(frame);
+  if (previous) frame.removeEventListener("load", previous);
+  pendingScrollRestores.delete(frame);
   if (top <= 0) return;
   const apply = (): void => {
     // A later render may own the pane by the time a slow stylesheet resolves.
@@ -226,10 +240,20 @@ function restoreScroll(frame: HTMLIFrameElement, top: number): void {
     const win = frame.contentWindow;
     const root = frame.contentDocument?.documentElement;
     if (!win || !root) return;
-    win.scrollTo(0, Math.min(top, Math.max(root.scrollHeight - root.clientHeight, 0)));
+    win.scrollTo(
+      0,
+      Math.min(top, Math.max(root.scrollHeight - root.clientHeight, 0)),
+    );
   };
   apply();
-  frame.addEventListener("load", apply, { once: true });
+  // document.close() can report complete before the iframe's late stylesheet load.
+  // Keep at most one pending restore per frame, replacing it on every mode transition.
+  const loaded = (): void => {
+    pendingScrollRestores.delete(frame);
+    apply();
+  };
+  pendingScrollRestores.set(frame, loaded);
+  frame.addEventListener("load", loaded, { once: true });
 }
 
 /**
@@ -247,6 +271,7 @@ async function render(): Promise<HTMLIFrameElement> {
 
   engineRun?.abort();
   minimap?.dispose();
+  findBar?.attach(null);
   minimap = null;
   delete window.__redlineNav;
   app().replaceChildren();
@@ -267,7 +292,10 @@ async function render(): Promise<HTMLIFrameElement> {
   // by `src` in those, so wait for the load before searching it.
   const handOverToFind = (): void => {
     if (frame !== currentFrame) return;
-    if (frame.getAttribute("src")) frame.addEventListener("load", () => findBar?.attach(frame), { once: true });
+    if (frame.getAttribute("src"))
+      frame.addEventListener("load", () => findBar?.attach(frame), {
+        once: true,
+      });
     else findBar?.attach(frame);
   };
 
@@ -287,10 +315,16 @@ async function render(): Promise<HTMLIFrameElement> {
     if (beforeEmpty !== afterEmpty) {
       if (beforeEmpty) {
         frame.src = afterUrl;
-        showBanner("info", "This file was added — showing the new document (no earlier version to compare).");
+        showBanner(
+          "info",
+          "This file was added — showing the new document (no earlier version to compare).",
+        );
       } else {
         frame.src = `${docBase}before.html`;
-        showBanner("info", "This file was deleted — showing the removed document.");
+        showBanner(
+          "info",
+          "This file was deleted — showing the removed document.",
+        );
       }
       return frame;
     }
@@ -303,7 +337,7 @@ async function render(): Promise<HTMLIFrameElement> {
 
     const timeoutMs = bootOptions.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
     if (before.length + after.length > SIZE_LIMIT) {
-      // Nothing is lost by not trying: the engine would run for minutes and then be abandoned.
+      // Input policy is independent of the worker time/work/output budgets.
       frame.src = afterUrl;
       showBanner("warning", tooLargeMessage());
       return frame;
@@ -329,7 +363,10 @@ async function render(): Promise<HTMLIFrameElement> {
     } catch (error) {
       // A superseded run was aborted BY the next render — that is not a state to report.
       if (superseded()) return frame;
-      if (error instanceof DiffTimeoutError || error instanceof DiffCancelledError) {
+      if (
+        error instanceof DiffTimeoutError ||
+        error instanceof DiffCancelledError
+      ) {
         // The redline was abandoned, not the document: show the new version and say which.
         frame.src = afterUrl;
         showBanner(
@@ -342,20 +379,22 @@ async function render(): Promise<HTMLIFrameElement> {
       }
       throw error;
     } finally {
+      if (engineRun === cancellation) engineRun = null;
       clearTimeout(computingTimer);
       removeComputingBanner();
     }
     if (superseded()) return frame;
 
+    const layoutStart = performance.now();
     const doc = frame.contentDocument;
     if (!doc) throw new Error("sandboxed frame document is not reachable");
     doc.open();
     doc.write(redline.html);
     doc.close();
 
-    if (doc.querySelector("ins.redline, del.redline, [data-diff-node]") === null) {
+    if (doc.querySelector(MARKER_SELECTOR) === null) {
       // The sides differ but the redline carries no markers — neither wrappers nor block-level
-      // annotations: attribute-only or <head>-only changes (or an engine gap we haven't met).
+      // annotations: head-only or sanitized-away content changes.
       // Showing the unmarked merge would falsely read as "no changes" — show the plain after
       // side and say so.
       frame.src = afterUrl;
@@ -370,25 +409,47 @@ async function render(): Promise<HTMLIFrameElement> {
         showBanner(
           "warning",
           "The files differ, but the change is not visible in rendered form " +
-            "(e.g. attributes or <head> content) — showing the new version; use the text diff.",
+            "(e.g. <head> content) — showing the new version; use the text diff.",
         );
       }
       return frame;
     }
 
-    if (redline.headDiffers || redline.bodyUnderReported) {
-      // Markers exist, but they are not the whole story: attribute or <head> changes ride along
-      // invisibly. Without this the viewer would silently under-report mixed changes.
+    if (redline.reducedPrecision)
+      showBanner(
+        "info",
+        "Some regions are shown as complete replacements with reduced precision.",
+      );
+
+    if (redline.headDiffers) {
+      // Body projection is exact, but the after head is intentionally used in all modes.
       showBanner(
         "warning",
-        "Some changes are not visible in rendered form (attributes or <head> content) — " +
-          "the highlights below are incomplete; check the text diff for the rest.",
+        "The document head changed. All modes use the new head and styles; " +
+          "body highlights do not show head changes. Check the text diff for the rest.",
       );
     }
 
+    const mergedBody = doc.body.cloneNode(true) as HTMLElement;
     let hiddenWarning: HTMLElement | null = null;
     const controller = installMinimap(content, frame, {
       mode: viewMode,
+      projectMode: (mode) => {
+        const modeStart = performance.now();
+        const top = frame.contentWindow?.scrollY ?? 0;
+        findBar?.attach(null);
+        const body = mergedBody.cloneNode(true) as HTMLElement;
+        doc.body.replaceWith(body);
+        const targets =
+          mode === "redline"
+            ? reviewTargets(body)
+            : projectBody(body, mode === "original" ? "before" : "after");
+        doc.documentElement.dataset.redlineMode = mode;
+        findBar?.attach(frame);
+        restoreScroll(frame, top);
+        recordTiming("redline-mode", modeStart);
+        return targets;
+      },
       onMode: (mode) => {
         viewMode = mode;
         // The mode just hid one side, so any match inside it is unreachable — the count must stop
@@ -414,13 +475,18 @@ async function render(): Promise<HTMLIFrameElement> {
       onState: reportNavState,
     });
     minimap = controller;
+    recordTiming("redline-layout", layoutStart);
     // The IDE toolbar's next/prev actions land here via executeJavaScript.
-    window.__redlineNav = (direction) => (direction === "next" ? controller.next() : controller.prev());
+    window.__redlineNav = (direction) =>
+      direction === "next" ? controller.next() : controller.prev();
   } catch (error) {
     if (superseded()) return frame;
     frame.src = afterUrl;
     const message = error instanceof Error ? error.message : String(error);
-    showBanner("warning", `Redline diff failed — showing the new version instead. (${message})`);
+    showBanner(
+      "warning",
+      `Redline diff failed — showing the new version instead. (${message})`,
+    );
   } finally {
     if (!superseded()) handOverToFind();
   }
@@ -444,7 +510,8 @@ export async function boot(): Promise<void> {
   if (!session) throw new Error("no session parameter in viewer URL");
   const timeoutMs = Number(params.get("diffTimeoutMs"));
   await bootSession(session, {
-    timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined,
+    timeoutMs:
+      Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined,
   });
 }
 
@@ -455,3 +522,18 @@ export function renderFatal(error: unknown): void {
   message.textContent = `Redline viewer failed to start: ${error instanceof Error ? error.message : String(error)}`;
   document.body.replaceChildren(message);
 }
+
+/** Release per-view work and detached documents when the host disposes the browser. */
+export function disposeViewer(): void {
+  generation++;
+  engineRun?.abort();
+  engineRun = null;
+  minimap?.dispose();
+  minimap = null;
+  findBar?.attach(null);
+  currentFrame = null;
+  delete window.__redlineNav;
+  delete window.__redlineReload;
+  delete window.__redlineFlush;
+}
+window.addEventListener("pagehide", disposeViewer);

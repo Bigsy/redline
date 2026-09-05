@@ -1,3 +1,4 @@
+import { reviewTargets, type ReviewTarget } from "./review-document";
 /**
  * M3 — in-page overview ruler + change navigation.
  *
@@ -17,6 +18,8 @@ export interface MarkerRect {
   kind: MarkerKind;
   /** The marked element, so the current block can be highlighted in the document itself. */
   el?: Element;
+  range?: Range;
+  operation?: string;
 }
 
 export interface ChangeBlock {
@@ -25,14 +28,11 @@ export interface ChangeBlock {
   kind: MarkerKind | "mixed";
   /** The marked elements this block was clustered from, in the order they were measured. */
   elements: Element[];
+  ranges: Range[];
+  operations: string[];
 }
 
-/**
- * What the frame shows. `redline` is the merged document with both sides marked; `original` hides
- * insertions and unstyles deletions; `final` hides deletions and unstyles insertions. The shell
- * stamps the choice on the framed document's root as `data-redline-mode` and the injected
- * REDLINE_CSS does the rest (see diff.ts).
- */
+/** The viewer supplies a displayed merge or actual before/after DOM projection. */
 export type ViewMode = "original" | "redline" | "final";
 
 const MODES: { mode: ViewMode; label: string; key: string }[] = [
@@ -51,51 +51,68 @@ export const BLOCK_GAP = 200;
  * blocks (typically at the top of the strip). Collapsed excerpt sections (M5) rely on the same
  * rule to drop out of the minimap.
  */
-export function clusterMarkers(markers: MarkerRect[], gap: number = BLOCK_GAP): ChangeBlock[] {
-  const visible = [...markers].filter((m) => m.height > 0).sort((a, b) => a.top - b.top);
+export function clusterMarkers(
+  markers: MarkerRect[],
+  gap: number = BLOCK_GAP,
+): ChangeBlock[] {
+  const visible = [...markers]
+    .filter((m) => m.height > 0)
+    .sort((a, b) => a.top - b.top);
 
-  const blocks: { top: number; bottom: number; kinds: Set<MarkerKind>; elements: Element[] }[] = [];
+  const blocks: {
+    top: number;
+    bottom: number;
+    kinds: Set<MarkerKind>;
+    elements: Element[];
+    ranges: Range[];
+    operations: string[];
+  }[] = [];
   for (const marker of visible) {
     const last = blocks[blocks.length - 1];
     if (last && marker.top - last.bottom <= gap) {
       last.bottom = Math.max(last.bottom, marker.top + marker.height);
       last.kinds.add(marker.kind);
       if (marker.el) last.elements.push(marker.el);
+      if (marker.range) last.ranges.push(marker.range);
+      if (marker.operation) last.operations.push(marker.operation);
     } else {
       blocks.push({
         top: marker.top,
         bottom: marker.top + marker.height,
         kinds: new Set([marker.kind]),
         elements: marker.el ? [marker.el] : [],
+        ranges: marker.range ? [marker.range] : [],
+        operations: marker.operation ? [marker.operation] : [],
       });
     }
   }
 
-  return blocks.map(({ top, bottom, kinds, elements }) => ({
+  return blocks.map(({ top, bottom, kinds, elements, ranges, operations }) => ({
     top,
     bottom,
     kind: kinds.size > 1 ? "mixed" : [...kinds][0],
     elements,
+    ranges,
+    operations,
   }));
 }
 
-/**
- * Measure every redline marker in the frame's document, in document coordinates. Markers come in
- * two shapes (see diff.ts#reconstructSide): ins/del wrappers for inline content, and block
- * elements annotated in place with `data-diff-node="ins|del"` (added/removed rows, list items).
- */
-function measureMarkers(doc: Document): MarkerRect[] {
-  // documentElement's rect.top is -scrollY, so subtracting it converts viewport to document
-  // coordinates without touching the frame's scroll state.
+/** Measure the active projection's retained elements and text ranges. */
+function measureMarkers(
+  doc: Document,
+  targets: ReviewTarget[] = reviewTargets(doc.body),
+): MarkerRect[] {
   const docTop = doc.documentElement.getBoundingClientRect().top;
-  return [...doc.querySelectorAll("ins.redline, del.redline, [data-diff-node]")].map((el) => {
-    const annotated = el.getAttribute("data-diff-node");
-    const rect = el.getBoundingClientRect();
+  return targets.map((target) => {
+    const rect = target.node.getBoundingClientRect();
+    const el = "tagName" in target.node ? target.node : undefined;
     return {
       top: rect.top - docTop,
       height: rect.height,
-      kind: (annotated ?? (el.tagName === "INS" ? "ins" : "del")) === "ins" ? "ins" : ("del" as MarkerKind),
+      kind: target.kind,
       el,
+      range: el ? undefined : (target.node as Range),
+      operation: target.operation,
     };
   });
 }
@@ -104,12 +121,7 @@ function measureMarkers(doc: Document): MarkerRect[] {
 export interface MinimapController {
   next(): void;
   prev(): void;
-  /**
-   * Switch what the frame shows. Owns the framed document's `data-redline-mode` attribute, the
-   * segmented control's pressed state, the re-measure a mode change needs, and the gate on the
-   * "your styles hide the changes" signal — in `original`/`final` half the markers are hidden on
-   * purpose, so that warning would be a lie there.
-   */
+  /** Request a viewer projection, update controls, and remeasure its expected targets. */
   setMode(mode: ViewMode): void;
   /**
    * Remove the strip, the nav buttons and every listener. The shell calls this before it
@@ -120,7 +132,12 @@ export interface MinimapController {
   dispose(): void;
 }
 
-const NOOP_CONTROLLER: MinimapController = { next() {}, prev() {}, setMode() {}, dispose() {} };
+const NOOP_CONTROLLER: MinimapController = {
+  next() {},
+  prev() {},
+  setMode() {},
+  dispose() {},
+};
 
 /**
  * Install the minimap and navigation into `container` (which wraps `frame`). Call once the
@@ -152,6 +169,7 @@ export interface MinimapOptions {
   mode?: ViewMode;
   /** The reader changed mode; the shell stores it for the next render. */
   onMode?: (mode: ViewMode) => void;
+  projectMode?: (mode: ViewMode) => ReviewTarget[];
 }
 
 export function installMinimap(
@@ -191,6 +209,7 @@ export function installMinimap(
 
   container.append(strip, nav);
 
+  let targets: ReviewTarget[] | undefined;
   let blocks: ChangeBlock[] = [];
   let current = -1;
   let mode: ViewMode = options.mode ?? "redline";
@@ -198,31 +217,27 @@ export function installMinimap(
   let disposed = false;
 
   function measure(): void {
-    const markers = measureMarkers(doc!);
+    if (disposed) return;
+    const markers = measureMarkers(doc!, targets);
     blocks = clusterMarkers(markers);
     if (current >= blocks.length) current = blocks.length - 1;
     plot();
     // The signal is only meaningful once the document itself has layout — a zero-height document
     // (not laid out yet, or a layout-less test DOM) would falsely read as "all markers hidden".
-    const hasLayout = doc!.documentElement.getBoundingClientRect().height > 0;
-    if (markers.length > 0 && hasLayout) onVisibility?.(markersVisible(markers));
+    const hasLayout =
+      frame.getBoundingClientRect().height > 0 ||
+      doc!.documentElement.getBoundingClientRect().height > 0;
+    if (hasLayout) onVisibility?.(markersVisible(markers));
   }
 
-  /**
-   * Should the shell treat the markers as visible? The answer is per mode, because what SHOULD be
-   * measurable is: in `redline`, every marker; in `original`/`final`, only the side that survives
-   * — we hid the other one ourselves.
-   *
-   * Reporting a flat `true` outside redline mode is the tempting shortcut and it is a hole. It
-   * hands a reviewed stylesheet a way to hide real changes with no warning at all, which is what
-   * PLAN.md decision #6 exists to prevent — and the stylesheet can select on the very attribute
-   * we set (`html[data-redline-mode="final"] ins.redline { display: none }`), so Redline can look
-   * perfectly honest while Final is empty. The `display` hiding is invisible to the CSS pins in
-   * diff.ts; measuring geometry is the only thing that catches it.
-   */
+  /** No surviving target means nothing to hide; otherwise at least one must have geometry. */
   function markersVisible(markers: MarkerRect[]): boolean {
-    const survivor = mode === "original" ? "del" : mode === "final" ? "ins" : null;
-    const shown = survivor === null ? markers : markers.filter((m) => m.kind === survivor);
+    const survivor =
+      mode === "original" ? "del" : mode === "final" ? "ins" : null;
+    const shown =
+      targets || survivor === null
+        ? markers
+        : markers.filter((m) => m.kind === survivor);
     // Nothing of the surviving side to show is not a failure: an insertion-only diff genuinely
     // has nothing marked in Original.
     return shown.length === 0 || shown.some((m) => m.height > 0);
@@ -230,18 +245,23 @@ export function installMinimap(
 
   function setMode(next: ViewMode): void {
     const changed = mode !== next;
+    const operation = blocks[current]?.operations[0];
     mode = next;
+    if (changed || !targets) targets = options.projectMode?.(next);
     doc!.documentElement.dataset.redlineMode = next;
     for (const [index, button] of modeButtons.entries()) {
       button.setAttribute("aria-pressed", String(MODES[index].mode === next));
     }
-    // Hiding one side reflows the document, but not necessarily to a different HEIGHT — the
+    // A new projection reflows the document, but not necessarily to a different HEIGHT — the
     // ResizeObserver cannot be relied on to notice, and every marker's position has moved.
     measure();
     // The old index names a different block now, and the reader has not moved. Re-derive from
     // where they are actually looking instead of claiming a position they are not at.
     if (current >= 0) {
-      current = nearestBlock();
+      const surviving = operation
+        ? blocks.findIndex((b) => b.operations.includes(operation))
+        : -1;
+      current = surviving >= 0 ? surviving : nearestBlock();
       plot();
     }
     if (changed) onMode?.(next);
@@ -255,6 +275,17 @@ export function installMinimap(
     for (const el of highlighted) el.removeAttribute("data-redline-current");
     highlighted = current >= 0 ? (blocks[current]?.elements ?? []) : [];
     for (const el of highlighted) el.setAttribute("data-redline-current", "");
+    const css = (
+      win as unknown as { CSS?: { highlights?: Map<string, unknown> } }
+    ).CSS;
+    const HighlightClass = (
+      win as unknown as { Highlight?: new (...ranges: Range[]) => unknown }
+    ).Highlight;
+    if (css?.highlights && HighlightClass)
+      css.highlights.set(
+        "redline-current",
+        new HighlightClass(...(blocks[current]?.ranges ?? [])),
+      );
   }
 
   function plot(): void {
@@ -290,7 +321,8 @@ export function installMinimap(
   next.addEventListener("click", () => goTo(current + 1));
 
   const onKey = (event: KeyboardEvent): void => {
-    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey)
+      return;
     // These are bare letters and digits: they must not fire while the reader is typing a query
     // into the find bar, which is shell chrome and so shares this window's key events.
     if (isTypingTarget(event.target)) return;
@@ -310,7 +342,8 @@ export function installMinimap(
     const line = win!.scrollY + win!.innerHeight / 3;
     let nearest = 0;
     for (let i = 1; i < blocks.length; i++) {
-      if (Math.abs(blocks[i].top - line) < Math.abs(blocks[nearest].top - line)) nearest = i;
+      if (Math.abs(blocks[i].top - line) < Math.abs(blocks[nearest].top - line))
+        nearest = i;
     }
     return nearest;
   }
@@ -339,6 +372,8 @@ export function installMinimap(
   // settles rather than guessing with timers.
   const resizes = new ResizeObserver(() => measure());
   resizes.observe(doc.documentElement);
+  // A stylesheet can hide every target without changing the document height.
+  doc.addEventListener("load", measure, true);
   setMode(mode);
 
   return {
@@ -348,6 +383,7 @@ export function installMinimap(
     dispose: () => {
       disposed = true;
       resizes.disconnect();
+      doc!.removeEventListener("load", measure, true);
       window.removeEventListener("keydown", onKey);
       doc!.removeEventListener("keydown", onKey);
       win!.removeEventListener("scroll", onScroll);
@@ -357,6 +393,11 @@ export function installMinimap(
       // might keep using would strand a highlight nothing owns any more.
       for (const el of highlighted) el.removeAttribute("data-redline-current");
       highlighted = [];
+      (
+        win as unknown as { CSS?: { highlights?: Map<string, unknown> } }
+      ).CSS?.highlights?.delete("redline-current");
+      targets = undefined;
+      blocks = [];
     },
   };
 }
