@@ -6,6 +6,8 @@ All notable changes to Redline are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] — 2026-09-26
+
 ### Fixed
 
 - Keep rendered Markdown table changes at row/cell level by omitting generated inter-row
@@ -105,7 +107,8 @@ Initial release.
 - Compatible with IntelliJ Platform 2024.1 and newer, including 2026.2+ where JCEF ships as the
   separate bundled *Web Browser (JCEF)* plugin.
 
-[Unreleased]: https://github.com/Bigsy/redline/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Bigsy/redline/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/Bigsy/redline/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Bigsy/redline/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Bigsy/redline/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Bigsy/redline/releases/tag/v0.1.0
