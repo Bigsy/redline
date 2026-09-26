@@ -70,3 +70,6 @@ PLAN-*.md
 *.backup
 tmp/
 temp/
+
+# Python release helper cache
+__pycache__/
