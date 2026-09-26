@@ -145,7 +145,23 @@ Release history is in [CHANGELOG.md](CHANGELOG.md).
 ### Releasing
 
 Change notes live only in `CHANGELOG.md`; the build renders the section matching
-`pluginVersion` into the plugin descriptor, so `plugin.xml` carries none. A release is a tag:
+`pluginVersion` into the plugin descriptor, so `plugin.xml` carries none.
+
+For a one-click patch release, open **Actions → Release → Run workflow** on `main`.
+The workflow increments the patch version, moves the Unreleased changelog entries into a dated
+release section (or adds a maintenance note if empty), then commits and pushes the version and tag.
+It explicitly starts the existing **build** workflow on that tag: publication still waits for
+Kotlin/frontend checks, browser tests, and the plugin verifier. The Release run only prepares and
+queues the release; follow the **build** run for the final publishing result. Only committed work
+on remote `main` is included.
+
+Configure the four repository secrets listed below before running Release. The workflow checks
+that they exist before changing anything. Repository rules must allow `GITHUB_TOKEN` to push the
+release commit and tag to `main`. If dispatch fails after the tag was pushed, rerun **build** with
+that tag (`gh workflow run build.yml --ref vx.y.z`); do not prepare another patch release. An already
+published Marketplace version cannot be uploaded again.
+
+For a manually chosen version, release using a tag:
 
 1. Bump `pluginVersion` in `gradle.properties`.
 2. In `CHANGELOG.md`, rename `## [Unreleased]` to `## [x.y.z] — YYYY-MM-DD`, add a fresh empty
