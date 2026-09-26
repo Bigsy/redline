@@ -64,6 +64,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
     private var afterHtml = ""
     private var beforeDir: Path? = null
     private var afterDir: Path? = null
+    private var documentFormat: RedlineDocumentFormat = RedlineDocumentFormat.HTML
     private var dark = false
 
     /**
@@ -90,6 +91,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
         val after = contents[1] as? DocumentContent
         beforeContent = before
         afterContent = after
+        documentFormat = RedlineDiffTool.detectFormat(request) ?: RedlineDocumentFormat.HTML
 
         readSides()
         beforeDir = before?.let(::assetBaseDir)
@@ -107,7 +109,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
             newBrowser.jbCefClient.addRequestHandler(RedlineNavigationGuard(), newBrowser.cefBrowser)
 
             RedlineWebResources.registerSchemeHandler()
-            newBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark))
+            newBrowser.loadURL(RedlineWebResources.viewerUrl(id, dark, documentFormat))
 
             panel.add(newBrowser.component, BorderLayout.CENTER)
             followIdeTheme(newBrowser)
@@ -177,6 +179,7 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
             beforeHtml = sides.before,
             afterHtml = sides.after,
             baseDir = sides.baseDir,
+            format = documentFormat,
         )
     }
 
@@ -255,8 +258,8 @@ class RedlineDiffViewer(private val request: ContentDiffRequest) : FrameDiffTool
      * The shell's theme rides in the viewer URL, which is only read at load time — a LaF switch
      * with a diff already open would otherwise leave light chrome on a dark IDE until the viewer
      * is reopened. The shell keys its chrome off `html[data-theme]` (see viewer.ts#applyTheme),
-     * so re-stamping the attribute is the whole update; the reviewed document's canvas stays
-     * light by design either way.
+     * so re-stamping the attribute is the whole update. Markdown documents also use this theme
+     * attribute for their document stylesheet.
      *
      * The connection is scoped to this viewer's disposable, so it unsubscribes with the pane.
      */

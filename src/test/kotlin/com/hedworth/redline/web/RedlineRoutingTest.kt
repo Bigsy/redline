@@ -1,5 +1,6 @@
 package com.hedworth.redline.web
 
+import com.hedworth.redline.diff.RedlineDocumentFormat
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -56,6 +57,28 @@ class RedlineRoutingTest {
         val before = get("/doc/$id/before.html")
         assertEquals(200, before.status)
         assertEquals("<p>before</p>", String(before.bytes))
+    }
+
+    @Test
+    fun markdownSessionDocumentsAreServedAsTextUntilTheShellConvertsThem() {
+        val id = RedlineWebResources.openSession("# before", "# after", baseDir = null, format = RedlineDocumentFormat.MARKDOWN)
+        sessions += id
+
+        val after = get("/doc/$id/after.html")
+        assertEquals(200, after.status)
+        assertEquals("text/plain; charset=utf-8", after.mimeType)
+        assertEquals("# after", String(after.bytes))
+    }
+
+    @Test
+    fun updatingMarkdownSessionPreservesItsFormatAndMimeType() {
+        val id = RedlineWebResources.openSession("# v1", "# v1", baseDir = null, format = RedlineDocumentFormat.MARKDOWN)
+        sessions += id
+        assertTrue(RedlineWebResources.updateSession(id, "# v2 before", "# v2 after", baseDir = null))
+
+        val after = get("/doc/$id/after.html")
+        assertEquals("text/plain; charset=utf-8", after.mimeType)
+        assertEquals("# v2 after", String(after.bytes))
     }
 
     @Test
@@ -168,5 +191,9 @@ class RedlineRoutingTest {
     fun viewerUrlCarriesSessionAndTheme() {
         assertEquals("http://redline.localhost/index.html?session=abc&theme=dark", RedlineWebResources.viewerUrl("abc", dark = true))
         assertEquals("http://redline.localhost/index.html?session=abc&theme=light", RedlineWebResources.viewerUrl("abc", dark = false))
+        assertEquals(
+            "http://redline.localhost/index.html?session=abc&theme=light&format=markdown",
+            RedlineWebResources.viewerUrl("abc", format = RedlineDocumentFormat.MARKDOWN),
+        )
     }
 }

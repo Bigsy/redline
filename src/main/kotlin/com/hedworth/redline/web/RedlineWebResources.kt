@@ -1,5 +1,6 @@
 package com.hedworth.redline.web
 
+import com.hedworth.redline.diff.RedlineDocumentFormat
 import com.intellij.ui.jcef.JBCefApp
 import org.cef.CefApp
 import org.jetbrains.annotations.TestOnly
@@ -51,11 +52,17 @@ object RedlineWebResources {
         val beforeHtml: String,
         val afterHtml: String,
         val baseDir: Path?,
+        val format: RedlineDocumentFormat,
     )
 
-    fun openSession(beforeHtml: String, afterHtml: String, baseDir: Path?): String {
+    fun openSession(
+        beforeHtml: String,
+        afterHtml: String,
+        baseDir: Path?,
+        format: RedlineDocumentFormat = RedlineDocumentFormat.HTML,
+    ): String {
         val id = UUID.randomUUID().toString()
-        sessions[id] = Session(beforeHtml, afterHtml, baseDir)
+        sessions[id] = Session(beforeHtml, afterHtml, baseDir, format)
         return id
     }
 
@@ -68,8 +75,15 @@ object RedlineWebResources {
      * Returns false when the id is unknown — the viewer was disposed and its session closed, so
      * there is no shell left to tell about it.
      */
-    fun updateSession(id: String, beforeHtml: String, afterHtml: String, baseDir: Path?): Boolean =
-        sessions.computeIfPresent(id) { _, _ -> Session(beforeHtml, afterHtml, baseDir) } != null
+    fun updateSession(
+        id: String,
+        beforeHtml: String,
+        afterHtml: String,
+        baseDir: Path?,
+        format: RedlineDocumentFormat? = null,
+    ): Boolean = sessions.computeIfPresent(id) { _, current ->
+        Session(beforeHtml, afterHtml, baseDir, format ?: current.format)
+    } != null
 
     fun closeSession(id: String) {
         sessions.remove(id)
@@ -88,10 +102,16 @@ object RedlineWebResources {
 
     // Only the viewer shell is ever loaded top-level; reviewed documents are reachable solely via
     // /doc/<session>/… routes, which the shell loads into a sandboxed iframe (see PLAN.md #6).
-    // The theme parameter styles the SHELL chrome only — the reviewed document's canvas stays
-    // light regardless (fidelity; see frontend index.html).
-    fun viewerUrl(id: String, dark: Boolean = false): String =
-        "http://$HOST/index.html?session=$id&theme=${if (dark) "dark" else "light"}"
+    // The theme parameter styles the SHELL chrome and is also consumed by the Markdown document
+    // stylesheet when the shell writes a converted document into its sandboxed frame.
+    fun viewerUrl(
+        id: String,
+        dark: Boolean = false,
+        format: RedlineDocumentFormat = RedlineDocumentFormat.HTML,
+    ): String {
+        val formatQuery = if (format == RedlineDocumentFormat.MARKDOWN) "&format=${format.queryValue}" else ""
+        return "http://$HOST/index.html?session=$id&theme=${if (dark) "dark" else "light"}$formatQuery"
+    }
 
     fun registerSchemeHandler() {
         if (!registered.compareAndSet(false, true)) {
@@ -202,8 +222,11 @@ object RedlineWebResources {
                 val relative = relativePath.joinToString("/")
                 val docHeaders = mapOf("Content-Security-Policy" to DOC_CSP)
                 when (relative) {
-                    "after.html" -> return ok("text/html; charset=utf-8", session.afterHtml.toByteArray(), docHeaders)
-                    "before.html" -> return ok("text/html; charset=utf-8", session.beforeHtml.toByteArray(), docHeaders)
+                    // Markdown is fetched as text for conversion in the shell. Keeping its MIME
+                    // type non-HTML also prevents an accidental browser navigation from treating
+                    // raw Markdown as a reviewed document before sanitization.
+                    "after.html" -> return ok(documentMime(session.format), session.afterHtml.toByteArray(), docHeaders)
+                    "before.html" -> return ok(documentMime(session.format), session.beforeHtml.toByteArray(), docHeaders)
                 }
 
                 val baseDir = session.baseDir
@@ -245,6 +268,11 @@ object RedlineWebResources {
 
             private fun ok(mimeType: String, bytes: ByteArray, headers: Map<String, String> = emptyMap()) =
                 ResourceResponse(status = 200, statusText = "OK", mimeType = mimeType, bytes = bytes, headers = headers)
+
+            private fun documentMime(format: RedlineDocumentFormat): String = when (format) {
+                RedlineDocumentFormat.HTML -> "text/html; charset=utf-8"
+                RedlineDocumentFormat.MARKDOWN -> "text/plain; charset=utf-8"
+            }
 
             private fun notFound(message: String) =
                 ResourceResponse(status = 404, statusText = "Not Found", mimeType = "text/plain", bytes = message.toByteArray())

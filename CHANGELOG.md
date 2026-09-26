@@ -6,6 +6,25 @@ All notable changes to Redline are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- Keep rendered Markdown table changes at row/cell level by omitting generated inter-row
+  formatting whitespace. Highlight metadata edits inline while preserving their whitespace,
+  and distinguish whole code-block replacements from other comparison fallbacks.
+- Include the bundled JCEF plugin on the build classpath when targeting IDEA 2026.2 or newer,
+  fixing compilation and `runIde` with `-PplatformVersion=2026.2.1` while retaining older targets.
+
+### Added
+
+- Rendered Markdown comparisons in the existing Redline viewer for `.md`, `.markdown`,
+  `.mdown`, `.mkd`, and `.mkdn`, including revision-backed and added/deleted files.
+- GFM headings, prose, emphasis, links, fenced code, blockquotes, lists, task lists, and tables.
+  Frontmatter appears as separate escaped metadata; document styling follows the IDE theme.
+- Bundled Markdown conversion in a bounded, cancellable worker, followed by the existing
+  sanitization, resource restrictions, and redline-engine pipeline. Original / Redline / Final,
+  navigation, find, swap, and live refresh use the same viewer.
+- Markdown regression coverage and a before/after demo in `testdata/markdown/`.
+
 ## [0.3.0] — 2026-09-05
 
 ### Changed

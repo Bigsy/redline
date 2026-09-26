@@ -5,6 +5,10 @@ import {
   DEFAULT_ENGINE_TIMEOUT_MS,
   DiffCancelledError,
   DiffTimeoutError,
+  DOC_CSP,
+  sanitizeReviewedDocument,
+  prepareMarkdown,
+  MarkdownError,
   type EngineOptions,
 } from "./diff";
 import { installFindBar, type FindBar } from "./findbar";
@@ -58,8 +62,10 @@ function reportNavState(blockCount: number, current: number): void {
 // not write banners into the new render's DOM (see `render`).
 let docBase = "";
 let bootOptions: BootOptions = {};
+let documentFormat: DocumentFormat = "html";
 let generation = 0;
 let currentFrame: HTMLIFrameElement | null = null;
+let themeObserver: MutationObserver | null = null;
 let minimap: MinimapController | null = null;
 // Session-scoped, unlike the minimap: the bar lives on document.body so a re-render cannot
 // replace it, and it keeps the reader's query across live refreshes.
@@ -166,12 +172,49 @@ async function fetchSide(url: string): Promise<string> {
   return response.text();
 }
 
+function safeMarkdownError(message: string): string {
+  // This document intentionally contains no source text. An oversized or failed conversion must
+  // never fall back to navigating the raw Markdown URL in the sandbox.
+  const escaped = message.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  return `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${DOC_CSP}"></head><body class="redline-markdown"><p>${escaped}</p></body></html>`;
+}
+
+/** Sanitize a worker-produced Markdown document on the main thread before it reaches the engine. */
+function sanitizeMarkdownHtml(html: string): string {
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  sanitizeReviewedDocument(parsed);
+  const csp = parsed.createElement("meta");
+  csp.setAttribute("http-equiv", "Content-Security-Policy");
+  csp.setAttribute("content", DOC_CSP);
+  parsed.head.insertBefore(csp, parsed.head.firstChild);
+  return `<!doctype html>\n${parsed.documentElement.outerHTML}`;
+}
+
+function writeStandalone(frame: HTMLIFrameElement, html: string): void {
+  const doc = frame.contentDocument;
+  if (!doc) throw new Error("sandboxed frame document is not reachable");
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  if (docBase && !parsed.head.querySelector("base")) {
+    const base = parsed.createElement("base");
+    base.href = docBase;
+    parsed.head.insertBefore(base, parsed.head.firstChild);
+  }
+  doc.open();
+  doc.write(`<!doctype html>\n${parsed.documentElement.outerHTML}`);
+  doc.close();
+  doc.documentElement.dataset.redlineTheme =
+    document.documentElement.dataset.theme ?? "light";
+}
+
 /**
  * `timeoutMs` is the engine time budget, set from the viewer URL's `?diffTimeoutMs=` (the e2e
  * suite uses it to force the give-up state); `execute` is diff.ts's test seam, which [boot] never
  * sets — unit tests can inject a pending executor to exercise termination.
  */
-export type BootOptions = Pick<EngineOptions, "timeoutMs" | "execute">;
+export type DocumentFormat = "html" | "markdown";
+export type BootOptions = Pick<EngineOptions, "timeoutMs" | "execute"> & {
+  format?: DocumentFormat;
+};
 
 export async function bootSession(
   session: string,
@@ -184,6 +227,7 @@ export async function bootSession(
     window.location.href,
   ).href;
   bootOptions = options;
+  documentFormat = options.format ?? "html";
 
   // The bridge may be injected before or after the shell finishes booting; __redlineFlush lets
   // the Kotlin side pull the latest state either way. States without navigation report "0,-1".
@@ -285,6 +329,8 @@ async function render(): Promise<HTMLIFrameElement> {
   content.appendChild(frame);
   app().appendChild(content);
   currentFrame = frame;
+  // Only sanitized Markdown may be written as a fallback. A failed fetch has no document yet.
+  let fallbackAfter: string | null = null;
 
   const afterUrl = `${docBase}after.html`;
   // Whatever state this render lands in, find has to work against the document it leaves in the
@@ -300,27 +346,72 @@ async function render(): Promise<HTMLIFrameElement> {
   };
 
   try {
-    const [before, after] = await Promise.all([
+    const [beforeSource, afterSource] = await Promise.all([
       fetchSide(`${docBase}before.html`),
       fetchSide(afterUrl),
     ]);
+    if (superseded()) return frame;
+
+    const beforeEmpty = beforeSource.trim() === "";
+    const afterEmpty = afterSource.trim() === "";
+
+    // Markdown conversion is deliberately a worker stage before the existing main-thread
+    // sanitization and redline worker. Empty sides remain empty so added/deleted documents keep
+    // their one-sided semantics.
+    const timeoutMs = bootOptions.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
+    const markdownCancellation = documentFormat === "markdown" ? new AbortController() : null;
+    if (markdownCancellation) engineRun = markdownCancellation;
+    let before = beforeSource;
+    let after = afterSource;
+    let removeMarkdownComputing = (): void => {};
+    try {
+      if (documentFormat === "markdown") {
+        if (beforeSource.length + afterSource.length > SIZE_LIMIT) {
+          throw new MarkdownError({ kind: "markdown", outcome: "limit", limit: "input" });
+        }
+        const banner = showComputingBanner(() => markdownCancellation?.abort());
+        removeMarkdownComputing = () => banner.remove();
+        // Keep exactly one preparation worker alive at a time. This bounds peak parser memory and
+        // gives cancellation a single well-defined worker to terminate.
+        before = beforeEmpty ? "" : await prepareMarkdown(beforeSource, { timeoutMs, signal: markdownCancellation!.signal });
+        after = afterEmpty ? "" : await prepareMarkdown(afterSource, { timeoutMs, signal: markdownCancellation!.signal });
+        before = beforeEmpty ? "" : sanitizeMarkdownHtml(before);
+        after = afterEmpty ? "" : sanitizeMarkdownHtml(after);
+        fallbackAfter = after;
+      }
+    } catch (error) {
+      if (markdownCancellation) markdownCancellation.abort();
+      if (superseded()) return frame;
+      const message = error instanceof Error ? error.message : String(error);
+      writeStandalone(frame, safeMarkdownError(`Markdown could not be rendered: ${message}`));
+      showBanner(
+        "warning",
+        error instanceof DiffCancelledError
+          ? "Markdown rendering cancelled — use the text diff."
+          : `Markdown could not be rendered — use the text diff. (${message})`,
+      );
+      return frame;
+    } finally {
+      removeMarkdownComputing();
+      if (engineRun === markdownCancellation) engineRun = null;
+    }
     if (superseded()) return frame;
 
     // One-sided diff (file added or deleted): there is nothing to merge, and wrapping an entire
     // document in ins/del markup would be noise, not signal. Render the side that exists, plainly,
     // and say why. (Diffing against the empty side would also trip the headDiffers warning with a
     // misleading "highlights are incomplete" message.)
-    const beforeEmpty = before.trim() === "";
-    const afterEmpty = after.trim() === "";
     if (beforeEmpty !== afterEmpty) {
       if (beforeEmpty) {
-        frame.src = afterUrl;
+        if (documentFormat === "markdown") writeStandalone(frame, after);
+        else frame.src = afterUrl;
         showBanner(
           "info",
           "This file was added — showing the new document (no earlier version to compare).",
         );
       } else {
-        frame.src = `${docBase}before.html`;
+        if (documentFormat === "markdown") writeStandalone(frame, before);
+        else frame.src = `${docBase}before.html`;
         showBanner(
           "info",
           "This file was deleted — showing the removed document.",
@@ -330,15 +421,21 @@ async function render(): Promise<HTMLIFrameElement> {
     }
 
     if (before === after) {
-      frame.src = afterUrl;
-      showBanner("info", "No changes — both sides are identical.");
+      if (documentFormat === "markdown") writeStandalone(frame, after);
+      else frame.src = afterUrl;
+      showBanner(
+        "info",
+        documentFormat === "markdown" && beforeSource !== afterSource
+          ? "Markdown source differs, but the rendered document is unchanged."
+          : "No changes — both sides are identical.",
+      );
       return frame;
     }
 
-    const timeoutMs = bootOptions.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
     if (before.length + after.length > SIZE_LIMIT) {
       // Input policy is independent of the worker time/work/output budgets.
-      frame.src = afterUrl;
+      if (documentFormat === "markdown") writeStandalone(frame, after);
+      else frame.src = afterUrl;
       showBanner("warning", tooLargeMessage());
       return frame;
     }
@@ -368,7 +465,8 @@ async function render(): Promise<HTMLIFrameElement> {
         error instanceof DiffCancelledError
       ) {
         // The redline was abandoned, not the document: show the new version and say which.
-        frame.src = afterUrl;
+        if (documentFormat === "markdown") writeStandalone(frame, after);
+        else frame.src = afterUrl;
         showBanner(
           "warning",
           error instanceof DiffTimeoutError
@@ -391,13 +489,16 @@ async function render(): Promise<HTMLIFrameElement> {
     doc.open();
     doc.write(redline.html);
     doc.close();
+    doc.documentElement.dataset.redlineTheme =
+      document.documentElement.dataset.theme ?? "light";
 
     if (doc.querySelector(MARKER_SELECTOR) === null) {
       // The sides differ but the redline carries no markers — neither wrappers nor block-level
       // annotations: head-only or sanitized-away content changes.
       // Showing the unmarked merge would falsely read as "no changes" — show the plain after
       // side and say so.
-      frame.src = afterUrl;
+      if (documentFormat === "markdown") writeStandalone(frame, after);
+      else frame.src = afterUrl;
       if (redline.formattingOnly) {
         // Whitespace/CRLF-only edits: nothing is missing from the rendered view, so the warning
         // ("use the text diff") would send the reviewer looking for a change that isn't there.
@@ -418,7 +519,9 @@ async function render(): Promise<HTMLIFrameElement> {
     if (redline.reducedPrecision)
       showBanner(
         "info",
-        "Some regions are shown as complete replacements with reduced precision.",
+        documentFormat === "markdown" && redline.wholeCodeBlocksOnly
+          ? "Changed code blocks are shown in full: the old block in red, the new block in green."
+          : "Some sections are shown as whole before/after blocks because finer inline comparison was unavailable.",
       );
 
     if (redline.headDiffers) {
@@ -481,11 +584,15 @@ async function render(): Promise<HTMLIFrameElement> {
       direction === "next" ? controller.next() : controller.prev();
   } catch (error) {
     if (superseded()) return frame;
-    frame.src = afterUrl;
     const message = error instanceof Error ? error.message : String(error);
+    if (documentFormat === "markdown") {
+      writeStandalone(frame, fallbackAfter ?? safeMarkdownError(`Markdown could not be loaded: ${message}`));
+    } else frame.src = afterUrl;
     showBanner(
       "warning",
-      `Redline diff failed — showing the new version instead. (${message})`,
+      documentFormat === "markdown" && fallbackAfter === null
+        ? `Markdown could not be loaded — use the text diff. (${message})`
+        : `Redline diff failed — showing the new version instead. (${message})`,
     );
   } finally {
     if (!superseded()) handOverToFind();
@@ -495,21 +602,35 @@ async function render(): Promise<HTMLIFrameElement> {
 
 /**
  * Theme the SHELL chrome (banners, minimap, nav buttons) to match the IDE. The reviewed document
- * itself always renders on a light canvas (`.redline-frame` pins `background: #fff`): an HTML
- * document's default canvas is white, so forcing it dark would misrender documents that assume
- * it — and it keeps the light marker colors readable regardless of IDE theme.
+ * HTML documents retain their own light canvas; rendered Markdown opts into the IDE theme through
+ * its generated stylesheet and the iframe's `data-redline-theme` attribute.
  */
 export function applyTheme(theme: string | null): void {
-  document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+  const value = theme === "dark" ? "dark" : "light";
+  document.documentElement.dataset.theme = value;
+  const reviewed = currentFrame?.contentDocument?.documentElement;
+  if (reviewed) reviewed.dataset.redlineTheme = value;
 }
 
 export async function boot(): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   applyTheme(params.get("theme"));
+  themeObserver?.disconnect();
+  themeObserver = new MutationObserver(() => {
+    const value = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    const reviewed = currentFrame?.contentDocument?.documentElement;
+    if (reviewed) reviewed.dataset.redlineTheme = value;
+  });
+  themeObserver.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"],
+  });
   const session = params.get("session");
   if (!session) throw new Error("no session parameter in viewer URL");
   const timeoutMs = Number(params.get("diffTimeoutMs"));
+  const format = params.get("format");
   await bootSession(session, {
+    format: format === "markdown" ? "markdown" : "html",
     timeoutMs:
       Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : undefined,
   });
@@ -532,6 +653,8 @@ export function disposeViewer(): void {
   minimap = null;
   findBar?.attach(null);
   currentFrame = null;
+  themeObserver?.disconnect();
+  themeObserver = null;
   delete window.__redlineNav;
   delete window.__redlineReload;
   delete window.__redlineFlush;

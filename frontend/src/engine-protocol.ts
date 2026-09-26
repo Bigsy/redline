@@ -8,6 +8,7 @@ export const HOST_LIMITS: Limits = {
   timeoutMs: 15_000,
 };
 export interface EngineRequest {
+  kind?: "engine";
   before: string;
   after: string;
 }
@@ -28,3 +29,16 @@ export type EngineResponse =
   | { outcome: "failure"; message: string };
 
 export type EngineSuccess = Extract<EngineResponse, { outcome: "success" }>;
+
+/** A separate, bounded preparation request used for rendered Markdown sessions. */
+export interface MarkdownRequest {
+  kind: "markdown";
+  source: string;
+}
+
+export type MarkdownResponse =
+  | { kind: "markdown"; outcome: "success"; html: string }
+  | { kind: "markdown"; outcome: "limit"; limit: "input" | "output" }
+  | { kind: "markdown"; outcome: "failure"; message: string };
+
+export type WorkerRequest = EngineRequest | MarkdownRequest;

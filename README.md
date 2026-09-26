@@ -1,12 +1,12 @@
-# Redline — Rendered HTML Diff for IntelliJ
+# Redline — Rendered HTML and Markdown Diff for IntelliJ
 
 [![build](https://github.com/Bigsy/redline/actions/workflows/build.yml/badge.svg)](https://github.com/Bigsy/redline/actions/workflows/build.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 https://plugins.jetbrains.com/plugin/33487-redline--rendered-html-diff
 
-Review HTML changes as a **rendered document**, not markup. When both sides of a diff are
-HTML, Redline adds a viewer that shows the page as the browser renders it, with insertions
+Review HTML and Markdown changes as a **rendered document**. When both sides of a diff are
+HTML or both are Markdown, Redline adds a viewer that shows the document with insertions
 and deletions highlighted inline — the way legal and publishing workflows mark up drafts.
 
 ![A text diff of an HTML change next to the same change rendered by Redline](assets/marketplace/01-comparison-hero.png)
@@ -16,6 +16,8 @@ readable at a glance instead of a wall of rewrapped markup.
 
 ## Features
 
+- **Rendered Markdown** — headings, paragraphs, emphasis, links, fenced code, blockquotes,
+  lists, task lists, and tables, with a document stylesheet that follows the IDE's light/dark theme.
 - **Inline redline rendering** — one merged document with `ins`/`del` styling: deletions
   struck through in red, insertions highlighted in green, in the document's own layout.
 - **Works anywhere the IDE shows a diff** — Compare Files, Local Changes, commits, and
@@ -64,25 +66,59 @@ then **Settings → Plugins → ⚙ → Install Plugin from Disk…** and pick t
 
 opens the sandbox IDE directly on a contract-style demo diff in the Redline viewer.
 
+For Markdown, use the included prose, table, task-list, and code demo:
+
+```
+./gradlew runIde --args="diff testdata/markdown/before.md testdata/markdown/after.md"
+```
+
+Select **Redline** in the diff viewer switcher. You can also select two Markdown files and
+choose **Compare Files**, or open a Markdown diff from **Local Changes** or revision history.
+Recognized extensions are `.md`, `.markdown`, `.mdown`, `.mkd`, and `.mkdn` (case insensitive).
+Added/deleted files work with an empty opposite side; HTML/Markdown mixed comparisons use
+the IDE's text viewers. No separate Markdown IDE plugin is required.
+
+Leading YAML (`---`) and TOML (`+++`) frontmatter is displayed separately as escaped metadata,
+preserving indentation. An unclosed frontmatter fence displays the remaining source as labelled
+unterminated metadata. Metadata edits receive inline highlights. Changed code fences appear as
+complete before/after blocks, with a code-specific explanation in the viewer.
+Code fences preserve whitespace and scroll horizontally; syntax highlighting,
+Mermaid diagrams, math rendering, and editing/merge controls are outside this viewer's scope.
+Raw HTML passes through the same sanitization and sandbox policy as HTML diffs. Remote images,
+styles, and other remote resources remain blocked. Rendered comparison can hide source-only
+changes (such as equivalent Markdown syntax); use the text diff when that distinction matters.
+See the [demo screenshots and verification notes](docs/markdown/README.md).
+
 ## How it works
 
 Redline registers a `FrameDiffTool` that appears in the diff viewer switcher when both
-sides of the request are HTML and JCEF is available. The Kotlin side serves the viewer
+sides of the request have the same supported format and JCEF is available (or one side is
+empty for an added/deleted file). The Kotlin side serves the viewer
 shell and both documents over a custom scheme handler; the shell (a Vite + TypeScript app
 in `frontend/`, bundled into `src/main/resources/web/` at build time) computes the merged
 redline with [redline-engine 0.1.0](https://www.npmjs.com/package/redline-engine) (MIT) and renders
 it into a sandboxed iframe.
 
+Markdown revisions are first converted to HTML by the bundled
+[Marked](https://github.com/markedjs/marked) GFM renderer in a cancellable worker, then sanitized
+and passed through the same whole-body comparison and projection checks as HTML. No renderer
+or resource is downloaded at runtime. Revision filenames are detected from diff metadata when
+no live file is available.
+
 Each complete sanitized body pair is compared once in a Web Worker. The host permits 2,000,000
 combined input UTF-16 units and 2,000,000 merged output units, with a 15-second watchdog and Cancel
 button. Limits, unavailable workers and unsupported projections show an explicit fallback to the
 new version; no synchronous or legacy retry can freeze the pane.
+Markdown source and converted HTML are size-checked as well. If conversion itself fails, is
+cancelled, or exceeds a limit, Redline shows an explanation directing you to the text diff;
+it never attempts to render raw Markdown as HTML.
 
 Original and Final are actual DOM projections of the merge, including formatting, attributes,
 list items and table structure. All modes use the after document's head and base policy, so
 Original is not a pixel-faithful reconstruction of the original stylesheet. The host independently
-checks both body projections. Complete coarse replacements get a reduced-precision notice;
-head changes and hidden content retain their own explanations.
+checks both body projections. Whole-region replacements get an explanation when finer comparison
+is unavailable; Markdown code-block replacements have their own notice.
+Head changes and hidden content retain their own explanations.
 
 When a side of the diff is a live document, edits to it are pushed into the open session and the
 shell re-renders in place — no page reload, so your scroll position survives.

@@ -22,6 +22,31 @@ function markers(html: string): Element[] {
   return [...parsed.querySelectorAll(MARKER_SELECTOR)];
 }
 
+describe("whole-block diagnostic classification", () => {
+  it("identifies code-block replacements without labelling inline prose as coarse", async () => {
+    const result = await buildRedline(
+      doc('<p>Old description</p><pre><code>const n = 1;\n</code></pre>'),
+      doc('<p>New description</p><pre><code>const n = 2;\n</code></pre>'),
+    );
+    expect(result.reducedPrecision).toBe(true);
+    expect(result.wholeCodeBlocksOnly).toBe(true);
+  });
+
+  it("does not disguise a separate structural fallback as a code-only replacement", async () => {
+    const result = await buildRedline(
+      doc('<table><tbody><tr><td>A</td></tr>\n</tbody></table><pre><code>old</code></pre>'),
+      doc('<table><tbody><tr><td>B</td></tr>\n<tr><td>C</td></tr>\n</tbody></table><pre><code>new</code></pre>'),
+    );
+    expect(result.reducedPrecision).toBe(true);
+    expect(result.wholeCodeBlocksOnly).toBe(false);
+  });
+
+  it("does not classify a plain preformatted block as a fenced code block", async () => {
+    const result = await buildRedline(doc('<pre>old</pre>'), doc('<pre>new</pre>'));
+    expect(result.wholeCodeBlocksOnly).toBe(false);
+  });
+});
+
 /**
  * Regressions for THE BUG (PLAN.md decision #2): upstream node-htmldiff builds its atomic-tag
  * regex without a tag-name boundary, so an atomic tag name that prefixes another tag name

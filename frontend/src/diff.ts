@@ -3,6 +3,8 @@ import type {
   EngineRequest,
   EngineResponse,
   EngineSuccess,
+  MarkdownRequest,
+  MarkdownResponse,
 } from "./engine-protocol";
 import {
   MARKER_SELECTOR,
@@ -28,6 +30,7 @@ export const DOC_CSP =
 export interface RedlineResult {
   html: string;
   reducedPrecision: boolean;
+  wholeCodeBlocksOnly: boolean;
   timings: EngineSuccess["timings"];
   markerCount: number;
   headDiffers: boolean;
@@ -80,6 +83,24 @@ export interface EngineOptions {
   execute?: EngineExecutor;
 }
 
+export interface MarkdownOptions {
+  timeoutMs?: number;
+  signal?: AbortSignal;
+}
+
+export class MarkdownError extends Error {
+  constructor(readonly response: MarkdownResponse) {
+    super(
+      response.outcome === "limit"
+        ? `Markdown ${response.limit} limit exceeded`
+        : response.outcome === "failure"
+          ? response.message
+          : "Markdown conversion failed",
+    );
+    this.name = "MarkdownError";
+  }
+}
+
 function runInWorker(beforeBody: string, afterBody: string): EngineRun {
   const worker = new Worker(new URL("./diff.worker.ts", import.meta.url), {
     type: "module",
@@ -100,7 +121,7 @@ function runInWorker(beforeBody: string, afterBody: string): EngineRun {
     worker.addEventListener("messageerror", () =>
       reject(new Error("Redline worker response unavailable")),
     );
-    const request: EngineRequest = { before: beforeBody, after: afterBody };
+    const request: EngineRequest = { kind: "engine", before: beforeBody, after: afterBody };
     try {
       worker.postMessage(request);
     } catch (error) {
@@ -111,6 +132,77 @@ function runInWorker(beforeBody: string, afterBody: string): EngineRun {
   return { result, terminate: () => worker.terminate() };
 }
 const defaultExecutor: EngineExecutor = runInWorker;
+
+interface MarkdownRun {
+  result: Promise<string>;
+  terminate(): void;
+}
+
+function runMarkdownWorker(source: string): MarkdownRun {
+  const worker = new Worker(new URL("./diff.worker.ts", import.meta.url), {
+    type: "module",
+  });
+  const result = new Promise<string>((resolve, reject) => {
+    worker.addEventListener(
+      "message",
+      (event: MessageEvent<MarkdownResponse>) => {
+        const response = event.data;
+        if (response.kind !== "markdown") return;
+        if (response.outcome === "success") resolve(response.html);
+        else reject(new MarkdownError(response));
+      },
+    );
+    worker.addEventListener("error", (event) =>
+      reject(new Error(event.message || "Markdown worker unavailable")),
+    );
+    worker.addEventListener("messageerror", () =>
+      reject(new Error("Markdown worker response unavailable")),
+    );
+    const request: MarkdownRequest = { kind: "markdown", source };
+    try {
+      worker.postMessage(request);
+    } catch (error) {
+      worker.terminate();
+      reject(error);
+    }
+  });
+  return { result, terminate: () => worker.terminate() };
+}
+
+/** Parse Markdown in a worker. The worker is always terminated when this settles. */
+export function prepareMarkdown(
+  source: string,
+  options: MarkdownOptions = {},
+): Promise<string> {
+  const timeoutMs = options.timeoutMs ?? DEFAULT_ENGINE_TIMEOUT_MS;
+  if (options.signal?.aborted) return Promise.reject(new DiffCancelledError());
+  let run: MarkdownRun;
+  try {
+    run = runMarkdownWorker(source);
+  } catch (error) {
+    return Promise.reject(new Error(`Markdown worker unavailable: ${String(error)}`));
+  }
+  return new Promise<string>((resolve, reject) => {
+    let settled = false;
+    const settle = (action: () => void): void => {
+      if (settled) return;
+      settled = true;
+      run.terminate();
+      clearTimeout(timer);
+      options.signal?.removeEventListener("abort", onAbort);
+      action();
+    };
+    const onAbort = (): void => settle(() => reject(new DiffCancelledError()));
+    const timer = setTimeout(() =>
+      settle(() => reject(new DiffTimeoutError(timeoutMs))), timeoutMs);
+    run.result.then(
+      (html) => settle(() => resolve(html)),
+      (error) => settle(() => reject(error)),
+    );
+    if (options.signal?.aborted) onAbort();
+    else options.signal?.addEventListener("abort", onAbort);
+  });
+}
 
 export function runEngine(
   beforeBody: string,
@@ -230,11 +322,27 @@ function assembleRedline(
   style.textContent = REDLINE_CSS;
   after.head.appendChild(style);
 
+  // Diagnostics identify exact operations. Classify only their owned markers, so an ordinary
+  // code-block replacement does not imply that unrelated paragraphs or tables lost precision.
+  const coarse = result.diagnostics.filter((d) => d.code === "coarse-replacement");
+  const coarseIds = new Set(coarse.map((d) => d.operationId));
+  const codeOperations = new Set<string>();
+  const otherOperations = new Set<string>();
+  for (const marker of after.body.querySelectorAll(MARKER_SELECTOR)) {
+    const id = marker.getAttribute("data-diff-op");
+    if (!id || !coarseIds.has(id)) continue;
+    const isCodeBlock = marker.localName === "pre" && marker.children.length === 1 &&
+      marker.firstElementChild?.localName === "code";
+    (isCodeBlock ? codeOperations : otherOperations).add(id);
+  }
+
   return {
     html: `<!doctype html>\n${after.documentElement.outerHTML}`,
     markerCount,
-    reducedPrecision: result.diagnostics.some(
-      (d) => d.code === "coarse-replacement",
+    reducedPrecision: coarse.length > 0,
+    wholeCodeBlocksOnly: coarse.length > 0 && coarse.every((d) =>
+      d.operationId !== undefined && codeOperations.has(d.operationId) &&
+      !otherOperations.has(d.operationId),
     ),
     timings: result.timings,
     headDiffers,

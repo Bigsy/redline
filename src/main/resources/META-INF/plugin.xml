@@ -10,7 +10,7 @@
     <vendor url="https://github.com/Bigsy/redline">Bill Hedworth</vendor>
 
     <description><![CDATA[
-    Review HTML changes as a rendered document, not markup. When both sides of a diff are HTML,
+    Review HTML and Markdown changes as a rendered document. When both sides are HTML or Markdown,
     Redline adds a viewer that shows the page as the browser renders it, with insertions and
     deletions highlighted inline — legal-document style.
     <br/><br/>
@@ -33,7 +33,7 @@
          plugin.xml at build time (single source of truth; see README "Releasing"). -->
 
     <extensions defaultExtensionNs="com.intellij">
-        <!-- Appears in the diff viewer switcher when canShow matches (both sides HTML + JCEF
+        <!-- Appears in the diff viewer switcher when canShow matches (compatible documents + JCEF
              available) — the same mechanism as the built-in image diff. -->
         <diff.DiffTool implementation="com.hedworth.redline.diff.RedlineDiffTool"/>
     </extensions>

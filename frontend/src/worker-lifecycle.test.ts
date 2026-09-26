@@ -3,6 +3,8 @@ import {
   buildRedline,
   DiffCancelledError,
   DiffEngineError,
+  DiffTimeoutError,
+  prepareMarkdown,
   runEngine,
 } from "./diff";
 import type { EngineResponse, EngineSuccess } from "./engine-protocol";
@@ -33,6 +35,30 @@ it("never constructs an executor for an already aborted request", async () => {
     runEngine("a", "b", { execute, signal: AbortSignal.abort() }),
   ).rejects.toBeInstanceOf(DiffCancelledError);
   expect(execute).not.toHaveBeenCalled();
+});
+it("terminates a Markdown preparation worker on timeout and cancellation", async () => {
+  const instances: { terminate: ReturnType<typeof vi.fn> }[] = [];
+  vi.stubGlobal(
+    "Worker",
+    class extends EventTarget {
+      terminate = vi.fn();
+      constructor() {
+        super();
+        instances.push(this);
+      }
+      postMessage() {}
+    },
+  );
+  await expect(prepareMarkdown("# title", { timeoutMs: 5 })).rejects.toBeInstanceOf(
+    DiffTimeoutError,
+  );
+  expect(instances[0].terminate).toHaveBeenCalledOnce();
+
+  const controller = new AbortController();
+  const pending = prepareMarkdown("# title", { signal: controller.signal });
+  controller.abort();
+  await expect(pending).rejects.toBeInstanceOf(DiffCancelledError);
+  expect(instances[1].terminate).toHaveBeenCalledOnce();
 });
 it("worker construction failure rejects without an inline comparison", async () => {
   vi.stubGlobal(

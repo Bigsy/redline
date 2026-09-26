@@ -14,6 +14,8 @@ const WEB_DIST = join(
 );
 export const VIEWER_URL =
   "http://redline.localhost/index.html?session=test&theme=light";
+/** Viewer URL with the Markdown conversion mode requested by the host contract. */
+export const MARKDOWN_VIEWER_URL = `${VIEWER_URL}&format=markdown`;
 
 function contentType(path: string): string {
   if (path.endsWith(".html")) return "text/html";
@@ -51,14 +53,21 @@ export async function serveSession(
         body: "p { height: 400px; margin: 0 }",
       });
     }
-    if (
+    const documentPath =
       url.pathname === "/doc/test/before.html" ||
       url.pathname === "/doc/test/after.html"
-    ) {
+        ? url.pathname
+        : url.pathname === "/doc/test/before.md" ||
+            url.pathname === "/doc/test/after.md"
+          ? url.pathname
+          : null;
+    if (documentPath) {
       return route.fulfill({
-        contentType: "text/html; charset=utf-8",
+        contentType: documentPath.endsWith(".md")
+          ? "text/markdown; charset=utf-8"
+          : "text/html; charset=utf-8",
         headers: { "Content-Security-Policy": DOC_CSP },
-        body: url.pathname.endsWith("before.html") ? docs.before : docs.after,
+        body: documentPath.includes("before.") ? docs.before : docs.after,
       });
     }
     const relative =

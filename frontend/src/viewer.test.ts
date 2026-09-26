@@ -97,6 +97,49 @@ afterEach(() => {
 });
 
 describe("viewer truthfulness states", () => {
+  it("shows an explicit Markdown load failure without claiming a version was rendered", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("session expired")));
+    await bootSession("markdown-expired", { format: "markdown" });
+    expect(frame().src).toBe("");
+    expect(frame().contentDocument?.body.textContent).toContain("could not be loaded");
+    expect(banners()[0].text).toContain("use the text diff");
+    expect(banners()[0].text).not.toContain("showing the new version");
+  });
+
+  it("renders Markdown through the redline pipeline and keeps the three views available", async () => {
+    sides("# Title\n\nOld paragraph\n\n- old", "# Title\n\nNew paragraph\n\n- new");
+    await bootSession("markdown", { format: "markdown" });
+    const written = frame().contentDocument!;
+    expect(written.querySelector("h1")?.textContent).toBe("Title");
+    expect(written.querySelector("ins.redline")).not.toBeNull();
+    expect(written.querySelector("style[data-redline-markdown]")).not.toBeNull();
+    expect(written.documentElement.dataset.redlineTheme).toBe("light");
+    expect(window.__redlineNav).toBeDefined();
+  });
+
+  it("renders added and deleted Markdown sides safely without navigating raw source", async () => {
+    sides("", "# Added\n\nA table:\n\n| a | b |\n| - | - |\n| 1 | 2 |");
+    await bootSession("markdown-added", { format: "markdown" });
+    expect(frame().src).toBe("");
+    expect(frame().contentDocument?.querySelector("h1")?.textContent).toBe("Added");
+    expect(frame().contentDocument?.querySelector("table")).not.toBeNull();
+
+    sides("# Removed", "");
+    window.__redlineReload!();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(frame().src).toBe("");
+    expect(frame().contentDocument?.querySelector("h1")?.textContent).toBe("Removed");
+  });
+
+  it("sanitizes Markdown raw HTML and installs the resource blocking policy", async () => {
+    sides("<p>old</p>", '<script>alert(1)</script><img src="https://evil.example/x"><p>new</p>');
+    await bootSession("markdown-security", { format: "markdown" });
+    const written = frame().contentDocument!;
+    expect(written.querySelector("script")).toBeNull();
+    expect(written.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute("content")).toContain("default-src 'self' data:");
+    expect(written.querySelector("img")?.getAttribute("src")).toBe("https://evil.example/x");
+  });
+
   it("state 1 — identical: shows the after side with a 'no changes' banner", async () => {
     sides(doc("<p>same</p>"), doc("<p>same</p>"));
     await bootSession("s1");
@@ -132,7 +175,7 @@ describe("viewer truthfulness states", () => {
     expect(banners()).toEqual([
       {
         kind: "info",
-        text: "Some regions are shown as complete replacements with reduced precision.",
+        text: "Some sections are shown as whole before/after blocks because finer inline comparison was unavailable.",
       },
     ]);
     expect(
@@ -168,7 +211,7 @@ describe("viewer truthfulness states", () => {
     expect(banners()).toEqual([
       {
         kind: "info",
-        text: "Some regions are shown as complete replacements with reduced precision.",
+        text: "Some sections are shown as whole before/after blocks because finer inline comparison was unavailable.",
       },
     ]);
     expect(

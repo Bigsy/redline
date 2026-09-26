@@ -2,20 +2,25 @@ import org.jetbrains.changelog.Changelog
 import org.jetbrains.intellij.platform.gradle.IntelliJPlatformType
 import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
-fun usesUnifiedIntelliJIdea(version: String): Boolean {
+/** Accept both release versions (2026.2.1) and platform build numbers (262.x). */
+fun isPlatformAtLeast(version: String, year: Int, minor: Int, build: Int): Boolean {
     fun numericPart(value: String): Int? = value.takeWhile(Char::isDigit).toIntOrNull()
 
     val parts = version.split('.')
     val first = parts.firstOrNull()?.let(::numericPart) ?: return false
     return if (first >= 2000) {
-        first > 2025 || (first == 2025 && (parts.getOrNull(1)?.let(::numericPart) ?: 0) >= 3)
+        first > year || (first == year && (parts.getOrNull(1)?.let(::numericPart) ?: 0) >= minor)
     } else {
-        first >= 253
+        first >= build
     }
 }
 
-// Redline — IntelliJ plugin: a rendered HTML diff (redline) viewer. Registers a FrameDiffTool
-// that, when both sides of a diff are HTML, shows the rendered document with changes highlighted
+fun usesUnifiedIntelliJIdea(version: String): Boolean = isPlatformAtLeast(version, 2025, 3, 253)
+
+fun hasSeparateJcefPlugin(version: String): Boolean = isPlatformAtLeast(version, 2026, 2, 262)
+
+// Redline — IntelliJ plugin: a rendered HTML/Markdown diff viewer. Registers a FrameDiffTool
+// that, when both sides have a supported format, shows the rendered document with changes highlighted
 // in a JCEF pane instead of a text diff.
 //
 // Build layout mirrors MilkJ: frontend/ (Vite + TS) builds into src/main/resources/web/.
@@ -53,6 +58,12 @@ dependencies {
             platformType,
             platformVersion,
         )
+        // From 2026.2, JCEF is a separate bundled plugin. plugin.xml declares the optional
+        // runtime dependency; Gradle also needs it on the compile/runIde classpath. Older
+        // targets provide these classes in the platform and have no bundled JCEF plugin.
+        bundledPlugins(platformVersion.map { version ->
+            if (hasSeparateJcefPlugin(version)) listOf("com.intellij.modules.jcef") else emptyList()
+        })
 
         pluginVerifier()
         zipSigner()
@@ -150,6 +161,7 @@ val frontendTest = tasks.register<Exec>("frontendTest") {
     inputs.dir("frontend/src")
     // corpus.test.ts reads the committed synthetic corpus.
     inputs.dir("testdata/mock")
+    inputs.dir("testdata/markdown")
     // Exec has no outputs; record a marker so up-to-date checks skip unchanged reruns.
     val marker = layout.buildDirectory.file("frontendTest.marker")
     outputs.file(marker)
@@ -175,7 +187,7 @@ val frontendBuild = tasks.register<Exec>("frontendBuild") {
 tasks {
     processResources {
         dependsOn(frontendBuild)
-        // Notices for the bundled published engine and its runtime dependencies.
+        // Notices for the bundled engine, Markdown renderer, and their runtime dependencies.
         from("third-party") {
             into("third-party")
         }

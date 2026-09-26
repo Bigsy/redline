@@ -24,6 +24,7 @@
     "vitest": "^4.1.11"
   },
   "dependencies": {
+    "marked": "18.0.14",
     "redline-engine": "0.1.0"
   }
 }
