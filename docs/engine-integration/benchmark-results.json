@@ -3,10 +3,11 @@
     "cpu": "Apple M1 Max",
     "platform": "darwin",
     "arch": "arm64",
-    "node": "v26.0.0",
+    "node": "v26.8.2",
     "browser": "151.0.7922.34"
   },
   "method": "3 cold page navigations and 20 sequential live refreshes per shape; fresh worker for every comparison. Two animation frames to render-ready. Independent native DOM comparison outside timing. Forced GC snapshots are retained JS/DOM, not RSS or worker peaks.",
+  "timingTargetsAdvisory": true,
   "rows": [
     {
       "name": "small",
@@ -17,51 +18,51 @@
       },
       "cold": [
         {
-          "readyMs": 60.43583299999955,
+          "readyMs": 62.91054199999962,
           "stages": {
             "redline-prepare": {
-              "ms": 0.30000001192092896,
+              "ms": 0.29999998211860657,
               "detail": null
             },
             "redline-worker": {
-              "ms": 15.400000005960464,
+              "ms": 22.5,
               "detail": {
-                "parseMs": 1.5999999940395355,
-                "matchMs": 1.800000011920929,
+                "parseMs": 1.800000011920929,
+                "matchMs": 2,
                 "renderMs": 0,
-                "validateMs": 0.699999988079071,
-                "totalMs": 4.0999999940395355
+                "validateMs": 0.7999999821186066,
+                "totalMs": 4.5999999940395355
               }
             },
             "redline-validation": {
-              "ms": 0.7999999821186066,
+              "ms": 0.800000011920929,
               "detail": null
             },
             "redline-layout": {
-              "ms": 6.5,
+              "ms": 5.699999988079071,
               "detail": null
             },
             "redline-mode": {
-              "ms": 5.300000011920929,
+              "ms": 4.5,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 56.539458000000195,
+          "readyMs": 66.30383299999994,
           "stages": {
             "redline-prepare": {
               "ms": 0.19999998807907104,
               "detail": null
             },
             "redline-worker": {
-              "ms": 14.600000023841858,
+              "ms": 21.900000005960464,
               "detail": {
-                "parseMs": 1.4000000059604645,
-                "matchMs": 1.7000000178813934,
+                "parseMs": 1.5,
+                "matchMs": 1.9000000059604645,
                 "renderMs": 0,
-                "validateMs": 0.7999999821186066,
-                "totalMs": 3.9000000059604645
+                "validateMs": 0.800000011920929,
+                "totalMs": 4.200000017881393
               }
             },
             "redline-validation": {
@@ -69,7 +70,102 @@
               "detail": null
             },
             "redline-layout": {
-              "ms": 1.2000000178813934,
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 57.123750000000655,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.20000001788139343,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.799999982118607,
+              "detail": {
+                "parseMs": 1.699999988079071,
+                "matchMs": 2.0999999940395355,
+                "renderMs": 0,
+                "validateMs": 0.9000000059604645,
+                "totalMs": 4.699999988079071
+              }
+            },
+            "redline-validation": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1.300000011920929,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.5,
+              "detail": null
+            }
+          }
+        }
+      ],
+      "warm": [
+        {
+          "readyMs": 49.06145800000013,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.09999999403953552,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 21.30000001192093,
+              "detail": {
+                "parseMs": 1.5999999940395355,
+                "matchMs": 1.9000000059604645,
+                "renderMs": 0,
+                "validateMs": 0.800000011920929,
+                "totalMs": 4.300000011920929
+              }
+            },
+            "redline-validation": {
+              "ms": 0.29999998211860657,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 0.9000000059604645,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 48.9502080000002,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.19999998807907104,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 21.5,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2,
+                "renderMs": 0,
+                "validateMs": 0.699999988079071,
+                "totalMs": 4.199999988079071
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
               "detail": null
             },
             "redline-mode": {
@@ -79,548 +175,19 @@
           }
         },
         {
-          "readyMs": 56.89912499999991,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 15.200000017881393,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.800000011920929,
-                "renderMs": 0,
-                "validateMs": 0.699999988079071,
-                "totalMs": 4
-              }
-            },
-            "redline-validation": {
-              "ms": 0.3999999761581421,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 0.9000000059604645,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        }
-      ],
-      "warm": [
-        {
-          "readyMs": 40.36741699999948,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.5,
-              "detail": {
-                "parseMs": 1.4000000059604645,
-                "matchMs": 1.699999988079071,
-                "renderMs": 0,
-                "validateMs": 0.800000011920929,
-                "totalMs": 3.9000000059604645
-              }
-            },
-            "redline-validation": {
-              "ms": 0.19999998807907104,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1.100000023841858,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.258875000000444,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.400000005960464,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.7999999821186066,
-                "renderMs": 0,
-                "validateMs": 0.5999999940395355,
-                "totalMs": 3.899999976158142
-              }
-            },
-            "redline-validation": {
-              "ms": 0.19999998807907104,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 41.08129199999985,
+          "readyMs": 49.06183299999975,
           "stages": {
             "redline-prepare": {
               "ms": 0.10000002384185791,
               "detail": null
             },
             "redline-worker": {
-              "ms": 13.899999976158142,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.5999999940395355,
-                "renderMs": 0.10000002384185791,
-                "validateMs": 0.7999999821186066,
-                "totalMs": 4
-              }
-            },
-            "redline-validation": {
-              "ms": 0.20000001788139343,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.29999998211860657,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.517125000000306,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.200000017881393,
-              "detail": {
-                "parseMs": 1.399999976158142,
-                "matchMs": 1.7000000178813934,
-                "renderMs": 0,
-                "validateMs": 0.9000000059604645,
-                "totalMs": 4
-              }
-            },
-            "redline-validation": {
-              "ms": 0.19999998807907104,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1.0999999940395355,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.79441700000007,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.399999976158142,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.699999988079071,
-                "renderMs": 0.10000002384185791,
-                "validateMs": 0.7999999821186066,
-                "totalMs": 4.0999999940395355
-              }
-            },
-            "redline-validation": {
-              "ms": 0.20000001788139343,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 0.9000000059604645,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.29999998211860657,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.18595800000003,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.10000002384185791,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.5,
+              "ms": 21.899999976158142,
               "detail": {
                 "parseMs": 1.7000000178813934,
-                "matchMs": 1.5999999940395355,
+                "matchMs": 1.9000000059604645,
                 "renderMs": 0,
                 "validateMs": 0.7999999821186066,
-                "totalMs": 4.0999999940395355
-              }
-            },
-            "redline-validation": {
-              "ms": 0.29999998211860657,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 0.9000000059604645,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.51075000000037,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 13.900000005960464,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.7999999821186066,
-                "renderMs": 0,
-                "validateMs": 0.7000000178813934,
-                "totalMs": 4
-              }
-            },
-            "redline-validation": {
-              "ms": 0.19999998807907104,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.503749999999854,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.5,
-              "detail": {
-                "parseMs": 1.5999999940395355,
-                "matchMs": 1.7000000178813934,
-                "renderMs": 0.09999999403953552,
-                "validateMs": 0.9000000059604645,
-                "totalMs": 4.300000011920929
-              }
-            },
-            "redline-validation": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 0.8999999761581421,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.791167000000314,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.10000002384185791,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.7000000178813934,
-                "renderMs": 0,
-                "validateMs": 0.7999999821186066,
-                "totalMs": 4
-              }
-            },
-            "redline-validation": {
-              "ms": 0.29999998211860657,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1.0999999940395355,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.61387500000001,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.099999994039536,
-              "detail": {
-                "parseMs": 1.5,
-                "matchMs": 1.800000011920929,
-                "renderMs": 0,
-                "validateMs": 0.7999999821186066,
-                "totalMs": 4.0999999940395355
-              }
-            },
-            "redline-validation": {
-              "ms": 0.20000001788139343,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.3999999761581421,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 41.2798329999996,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.300000011920929,
-              "detail": {
-                "parseMs": 1.4000000059604645,
-                "matchMs": 1.699999988079071,
-                "renderMs": 0,
-                "validateMs": 0.9000000059604645,
-                "totalMs": 4
-              }
-            },
-            "redline-validation": {
-              "ms": 0.19999998807907104,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.3999999761581421,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 41.174582999999984,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.10000002384185791,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 13.799999982118607,
-              "detail": {
-                "parseMs": 1.4000000059604645,
-                "matchMs": 1.7000000178813934,
-                "renderMs": 0,
-                "validateMs": 0.699999988079071,
-                "totalMs": 3.800000011920929
-              }
-            },
-            "redline-validation": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 0.9000000059604645,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.231041000000005,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 15.099999994039536,
-              "detail": {
-                "parseMs": 1.5999999940395355,
-                "matchMs": 1.7999999821186066,
-                "renderMs": 0.10000002384185791,
-                "validateMs": 0.699999988079071,
-                "totalMs": 4.199999988079071
-              }
-            },
-            "redline-validation": {
-              "ms": 0.20000001788139343,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1.0999999940395355,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.860624999999345,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.200000017881393,
-              "detail": {
-                "parseMs": 1.5999999940395355,
-                "matchMs": 2,
-                "renderMs": 0,
-                "validateMs": 0.7000000178813934,
-                "totalMs": 4.300000011920929
-              }
-            },
-            "redline-validation": {
-              "ms": 0.29999998211860657,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.62741600000027,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.10000002384185791,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 13.599999994039536,
-              "detail": {
-                "parseMs": 1.2999999821186066,
-                "matchMs": 1.7000000178813934,
-                "renderMs": 0.09999999403953552,
-                "validateMs": 0.800000011920929,
-                "totalMs": 3.9000000059604645
-              }
-            },
-            "redline-validation": {
-              "ms": 0.19999998807907104,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1.0999999940395355,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.4000000059604645,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.047874999999294,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.599999994039536,
-              "detail": {
-                "parseMs": 1.5999999940395355,
-                "matchMs": 1.5999999940395355,
-                "renderMs": 0,
-                "validateMs": 0.7000000178813934,
-                "totalMs": 3.9000000059604645
-              }
-            },
-            "redline-validation": {
-              "ms": 0.20000001788139343,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 1,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 0.30000001192092896,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 40.775125000000116,
-          "stages": {
-            "redline-prepare": {
-              "ms": 0.09999999403953552,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 14.599999994039536,
-              "detail": {
-                "parseMs": 1.5999999940395355,
-                "matchMs": 1.800000011920929,
-                "renderMs": 0,
-                "validateMs": 1,
                 "totalMs": 4.4000000059604645
               }
             },
@@ -639,24 +206,117 @@
           }
         },
         {
-          "readyMs": 40.51008300000012,
+          "readyMs": 48.95758300000034,
           "stages": {
             "redline-prepare": {
               "ms": 0.09999999403953552,
               "detail": null
             },
             "redline-worker": {
-              "ms": 14.400000005960464,
+              "ms": 22.80000001192093,
               "detail": {
-                "parseMs": 1.699999988079071,
-                "matchMs": 1.7000000178813934,
+                "parseMs": 1.5999999940395355,
+                "matchMs": 2,
                 "renderMs": 0,
-                "validateMs": 0.7999999821186066,
-                "totalMs": 4.199999988079071
+                "validateMs": 1,
+                "totalMs": 4.5999999940395355
               }
             },
             "redline-validation": {
               "ms": 0.19999998807907104,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1.2000000178813934,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 48.801124999999956,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.20000001788139343,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 21.599999994039536,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2,
+                "renderMs": 0,
+                "validateMs": 0.7000000178813934,
+                "totalMs": 4.200000017881393
+              }
+            },
+            "redline-validation": {
+              "ms": 0.19999998807907104,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 47.91320799999994,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.19999998807907104,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.400000005960464,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2.2999999821186066,
+                "renderMs": 0,
+                "validateMs": 0.800000011920929,
+                "totalMs": 4.5999999940395355
+              }
+            },
+            "redline-validation": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.3999999761581421,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 50.33604099999957,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.09999999403953552,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 21.900000005960464,
+              "detail": {
+                "parseMs": 1.5999999940395355,
+                "matchMs": 1.9000000059604645,
+                "renderMs": 0,
+                "validateMs": 1,
+                "totalMs": 4.5
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
               "detail": null
             },
             "redline-layout": {
@@ -670,24 +330,24 @@
           }
         },
         {
-          "readyMs": 40.454374999999345,
+          "readyMs": 46.67787500000031,
           "stages": {
             "redline-prepare": {
-              "ms": 0.09999999403953552,
+              "ms": 0.19999998807907104,
               "detail": null
             },
             "redline-worker": {
-              "ms": 14,
+              "ms": 21.80000001192093,
               "detail": {
-                "parseMs": 1.600000023841858,
-                "matchMs": 1.699999988079071,
+                "parseMs": 1.5,
+                "matchMs": 2,
                 "renderMs": 0,
-                "validateMs": 0.800000011920929,
-                "totalMs": 4.100000023841858
+                "validateMs": 0.8999999761581421,
+                "totalMs": 4.399999976158142
               }
             },
             "redline-validation": {
-              "ms": 0.29999998211860657,
+              "ms": 0.19999998807907104,
               "detail": null
             },
             "redline-layout": {
@@ -701,19 +361,360 @@
           }
         },
         {
-          "readyMs": 40.58845800000017,
+          "readyMs": 49.17000000000007,
           "stages": {
             "redline-prepare": {
               "ms": 0.09999999403953552,
               "detail": null
             },
             "redline-worker": {
-              "ms": 14.400000005960464,
+              "ms": 22.599999994039536,
               "detail": {
-                "parseMs": 1.800000011920929,
+                "parseMs": 1.5,
+                "matchMs": 2.0999999940395355,
+                "renderMs": 0,
+                "validateMs": 0.9000000059604645,
+                "totalMs": 4.5
+              }
+            },
+            "redline-validation": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 54.33629199999996,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.09999999403953552,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.600000023841858,
+              "detail": {
+                "parseMs": 1.699999988079071,
                 "matchMs": 1.9000000059604645,
                 "renderMs": 0,
                 "validateMs": 0.7999999821186066,
+                "totalMs": 4.399999976158142
+              }
+            },
+            "redline-validation": {
+              "ms": 0.29999998211860657,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 52.78462500000023,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.10000002384185791,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 28.099999994039536,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2.2000000178813934,
+                "renderMs": 0.09999999403953552,
+                "validateMs": 0.800000011920929,
+                "totalMs": 4.600000023841858
+              }
+            },
+            "redline-validation": {
+              "ms": 0.29999998211860657,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1.100000023841858,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 50.796417000000474,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.10000002384185791,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 21.899999976158142,
+              "detail": {
+                "parseMs": 1.7000000178813934,
+                "matchMs": 1.899999976158142,
+                "renderMs": 0,
+                "validateMs": 0.9000000059604645,
+                "totalMs": 4.5
+              }
+            },
+            "redline-validation": {
+              "ms": 0.20000001788139343,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.3999999761581421,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 46.76995799999986,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.599999994039536,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2,
+                "renderMs": 0.09999999403953552,
+                "validateMs": 0.800000011920929,
+                "totalMs": 4.4000000059604645
+              }
+            },
+            "redline-validation": {
+              "ms": 0.20000001788139343,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1.0999999940395355,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.3999999761581421,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 48.52570800000012,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 23.599999994039536,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2.2000000178813934,
+                "renderMs": 0,
+                "validateMs": 1,
+                "totalMs": 4.700000017881393
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.3999999761581421,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 49.05420800000047,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.09999999403953552,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.599999994039536,
+              "detail": {
+                "parseMs": 1.9000000059604645,
+                "matchMs": 2,
+                "renderMs": 0,
+                "validateMs": 0.7999999821186066,
+                "totalMs": 4.699999988079071
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1.300000011920929,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 48.63804099999925,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.10000002384185791,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.69999998807907,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2,
+                "renderMs": 0,
+                "validateMs": 0.9000000059604645,
+                "totalMs": 4.4000000059604645
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 0.8999999761581421,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 51.30479100000048,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.10000002384185791,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 21.19999998807907,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 2.100000023841858,
+                "renderMs": 0,
+                "validateMs": 0.699999988079071,
+                "totalMs": 4.300000011920929
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 0.8999999761581421,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 46.47016699999949,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.09999999403953552,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.200000017881393,
+              "detail": {
+                "parseMs": 1.699999988079071,
+                "matchMs": 1.9000000059604645,
+                "renderMs": 0.09999999403953552,
+                "validateMs": 0.699999988079071,
+                "totalMs": 4.399999976158142
+              }
+            },
+            "redline-validation": {
+              "ms": 0.29999998211860657,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 51.193624999999884,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0.09999999403953552,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22.69999998807907,
+              "detail": {
+                "parseMs": 1.5,
+                "matchMs": 1.9000000059604645,
+                "renderMs": 0.09999999403953552,
+                "validateMs": 1,
+                "totalMs": 4.5
+              }
+            },
+            "redline-validation": {
+              "ms": 0.30000001192092896,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 1,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 0.4000000059604645,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 46.758458000000246,
+          "stages": {
+            "redline-prepare": {
+              "ms": 0,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 22,
+              "detail": {
+                "parseMs": 1.5999999940395355,
+                "matchMs": 2.0999999940395355,
+                "renderMs": 0.09999999403953552,
+                "validateMs": 0.7000000178813934,
                 "totalMs": 4.5
               }
             },
@@ -722,7 +723,7 @@
               "detail": null
             },
             "redline-layout": {
-              "ms": 1.0999999940395355,
+              "ms": 1.2000000178813934,
               "detail": null
             },
             "redline-mode": {
@@ -735,18 +736,19 @@
       "modes": [
         {
           "mode": "Original",
-          "readyMs": 81.7684589999999
+          "readyMs": 72.76683299999968
         },
         {
           "mode": "Final",
-          "readyMs": 29.003749999999854
+          "readyMs": 28.736541000000216
         }
       ],
       "wholeBodyRequests": [
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -754,7 +756,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -762,7 +765,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -770,7 +774,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -778,7 +783,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -786,7 +792,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -794,7 +801,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -802,7 +810,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -810,7 +819,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -818,7 +828,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -826,7 +837,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -834,7 +846,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -842,7 +855,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -850,7 +864,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -858,7 +873,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -866,7 +882,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -874,7 +891,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -882,7 +900,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -890,7 +909,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -898,7 +918,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
@@ -906,13 +927,14 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 41,
           "after": 41
         }
       ],
-      "p95": 41.174582999999984,
+      "p95": 52.78462500000023,
       "targetMs": 250,
       "targetPassed": true
     },
@@ -925,94 +947,94 @@
       },
       "cold": [
         {
-          "readyMs": 1152.3771669999987,
+          "readyMs": 1127.527,
           "stages": {
             "redline-prepare": {
-              "ms": 114,
+              "ms": 112.7999999821186,
               "detail": null
             },
             "redline-worker": {
-              "ms": 487.69999998807907,
-              "detail": {
-                "parseMs": 198.80000001192093,
-                "matchMs": 114.90000000596046,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 157.59999999403954,
-                "totalMs": 475.09999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 238.59999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 234.90000000596046,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 117.7000000178814,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1117.3933749999997,
-          "stages": {
-            "redline-prepare": {
-              "ms": 106.30000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 457.5,
-              "detail": {
-                "parseMs": 189.90000000596046,
-                "matchMs": 115.59999999403954,
-                "renderMs": 3.600000023841858,
-                "validateMs": 136.39999997615814,
-                "totalMs": 445.5
-              }
-            },
-            "redline-validation": {
-              "ms": 214.09999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 244.69999998807907,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 129,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1176.7032920000001,
-          "stages": {
-            "redline-prepare": {
-              "ms": 110.09999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 467.2000000178814,
+              "ms": 470,
               "detail": {
                 "parseMs": 193.5,
-                "matchMs": 116.40000000596046,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 141.09999999403954,
-                "totalMs": 454.7999999821186
+                "matchMs": 118,
+                "renderMs": 3.5,
+                "validateMs": 135.40000000596046,
+                "totalMs": 450.40000000596046
               }
             },
             "redline-validation": {
-              "ms": 225.5,
+              "ms": 238,
               "detail": null
             },
             "redline-layout": {
-              "ms": 250.5,
+              "ms": 233.60000002384186,
               "detail": null
             },
             "redline-mode": {
-              "ms": 134.09999999403954,
+              "ms": 115.69999998807907,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1119.1062079999992,
+          "stages": {
+            "redline-prepare": {
+              "ms": 102.90000000596046,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 464.69999998807907,
+              "detail": {
+                "parseMs": 189.69999998807907,
+                "matchMs": 116.60000002384186,
+                "renderMs": 3.199999988079071,
+                "validateMs": 136.19999998807907,
+                "totalMs": 445.69999998807907
+              }
+            },
+            "redline-validation": {
+              "ms": 216.90000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 248.19999998807907,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 132.19999998807907,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1123.3855000000003,
+          "stages": {
+            "redline-prepare": {
+              "ms": 108.7000000178814,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 458.5,
+              "detail": {
+                "parseMs": 186.89999997615814,
+                "matchMs": 115.5,
+                "renderMs": 3.2000000178813934,
+                "validateMs": 133.7999999821186,
+                "totalMs": 439.39999997615814
+              }
+            },
+            "redline-validation": {
+              "ms": 221.39999997615814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 247.2000000178814,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 134.40000000596046,
               "detail": null
             }
           }
@@ -1020,20 +1042,299 @@
       ],
       "warm": [
         {
-          "readyMs": 1139.3669169999994,
+          "readyMs": 1104.4526670000014,
+          "stages": {
+            "redline-prepare": {
+              "ms": 106.09999999403954,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 489.5,
+              "detail": {
+                "parseMs": 201.19999998807907,
+                "matchMs": 117.09999999403954,
+                "renderMs": 3.5,
+                "validateMs": 136.90000000596046,
+                "totalMs": 458.69999998807907
+              }
+            },
+            "redline-validation": {
+              "ms": 220.30000001192093,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 217.7999999821186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 105.7999999821186,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1125.6860419999994,
+          "stages": {
+            "redline-prepare": {
+              "ms": 107,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 489.40000000596046,
+              "detail": {
+                "parseMs": 192.10000002384186,
+                "matchMs": 117.5,
+                "renderMs": 3.2999999821186066,
+                "validateMs": 138.59999999403954,
+                "totalMs": 451.5
+              }
+            },
+            "redline-validation": {
+              "ms": 221.80000001192093,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 235.7999999821186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 105.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1082.7258330000004,
+          "stages": {
+            "redline-prepare": {
+              "ms": 104.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 473.09999999403954,
+              "detail": {
+                "parseMs": 195.30000001192093,
+                "matchMs": 118.09999999403954,
+                "renderMs": 3.300000011920929,
+                "validateMs": 136.7999999821186,
+                "totalMs": 453.5
+              }
+            },
+            "redline-validation": {
+              "ms": 220.5,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 212.7999999821186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 106.19999998807907,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1086.1257499999992,
+          "stages": {
+            "redline-prepare": {
+              "ms": 103.40000000596046,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 466.69999998807907,
+              "detail": {
+                "parseMs": 192.7000000178814,
+                "matchMs": 117.19999998807907,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 134.69999998807907,
+                "totalMs": 448
+              }
+            },
+            "redline-validation": {
+              "ms": 215.10000002384186,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 229,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 113.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1096.7126250000001,
+          "stages": {
+            "redline-prepare": {
+              "ms": 102.30000001192093,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 469.09999999403954,
+              "detail": {
+                "parseMs": 190.59999999403954,
+                "matchMs": 116.5,
+                "renderMs": 3.300000011920929,
+                "validateMs": 135,
+                "totalMs": 445.40000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 216.09999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 226.10000002384186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 106.2999999821186,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1096.830791999997,
+          "stages": {
+            "redline-prepare": {
+              "ms": 116.69999998807907,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 462.10000002384186,
+              "detail": {
+                "parseMs": 189.2000000178814,
+                "matchMs": 114.09999999403954,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 133.5,
+                "totalMs": 440.2000000178814
+              }
+            },
+            "redline-validation": {
+              "ms": 216.19999998807907,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 232.5,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 122.2000000178814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1103.5282079999997,
           "stages": {
             "redline-prepare": {
               "ms": 107.7000000178814,
               "detail": null
             },
             "redline-worker": {
-              "ms": 509.89999997615814,
+              "ms": 455.59999999403954,
               "detail": {
-                "parseMs": 209.09999999403954,
-                "matchMs": 129.90000000596046,
-                "renderMs": 4.199999988079071,
-                "validateMs": 153.30000001192093,
-                "totalMs": 496.5
+                "parseMs": 184,
+                "matchMs": 115.09999999403954,
+                "renderMs": 3.5,
+                "validateMs": 135,
+                "totalMs": 437.59999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 219.19999998807907,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 251.90000000596046,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 110.89999997615814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1067.9590830000016,
+          "stages": {
+            "redline-prepare": {
+              "ms": 103.90000000596046,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 459.90000000596046,
+              "detail": {
+                "parseMs": 188.2999999821186,
+                "matchMs": 115.80000001192093,
+                "renderMs": 3.5,
+                "validateMs": 133.59999999403954,
+                "totalMs": 441.19999998807907
+              }
+            },
+            "redline-validation": {
+              "ms": 221.40000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 211,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 105.40000000596046,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1100.479958,
+          "stages": {
+            "redline-prepare": {
+              "ms": 104.2000000178814,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 467.7999999821186,
+              "detail": {
+                "parseMs": 194,
+                "matchMs": 119.40000000596046,
+                "renderMs": 3.2999999821186066,
+                "validateMs": 131.90000000596046,
+                "totalMs": 448.59999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 212.40000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 247.5,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 110.09999999403954,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1067.7283750000024,
+          "stages": {
+            "redline-prepare": {
+              "ms": 100.19999998807907,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 459.40000000596046,
+              "detail": {
+                "parseMs": 188.40000000596046,
+                "matchMs": 116.09999999403954,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 131.09999999403954,
+                "totalMs": 439
               }
             },
             "redline-validation": {
@@ -1041,34 +1342,251 @@
               "detail": null
             },
             "redline-layout": {
-              "ms": 218.7000000178814,
+              "ms": 216.40000000596046,
               "detail": null
             },
             "redline-mode": {
-              "ms": 106,
+              "ms": 107.90000000596046,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1131.6741669999992,
+          "readyMs": 1135.7849170000009,
           "stages": {
             "redline-prepare": {
-              "ms": 105.19999998807907,
+              "ms": 128.89999997615814,
               "detail": null
             },
             "redline-worker": {
-              "ms": 499.30000001192093,
+              "ms": 463.10000002384186,
               "detail": {
-                "parseMs": 214,
-                "matchMs": 120.40000000596046,
-                "renderMs": 4,
-                "validateMs": 146.7000000178814,
-                "totalMs": 485.10000002384186
+                "parseMs": 187.19999998807907,
+                "matchMs": 115.2000000178814,
+                "renderMs": 3.5,
+                "validateMs": 134.5,
+                "totalMs": 440.40000000596046
               }
             },
             "redline-validation": {
-              "ms": 219.59999999403954,
+              "ms": 225,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 250,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 111.89999997615814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1090.3658329999998,
+          "stages": {
+            "redline-prepare": {
+              "ms": 103.2000000178814,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 465.89999997615814,
+              "detail": {
+                "parseMs": 186.90000000596046,
+                "matchMs": 116.19999998807907,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 134.2999999821186,
+                "totalMs": 440.7999999821186
+              }
+            },
+            "redline-validation": {
+              "ms": 219.40000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 230.7000000178814,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 104.40000000596046,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1091.3348750000005,
+          "stages": {
+            "redline-prepare": {
+              "ms": 105.80000001192093,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 469.89999997615814,
+              "detail": {
+                "parseMs": 191.30000001192093,
+                "matchMs": 120.2999999821186,
+                "renderMs": 3.600000023841858,
+                "validateMs": 134.89999997615814,
+                "totalMs": 450.09999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 216.60000002384186,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 226.5,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 110.59999999403954,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1107.3865829999995,
+          "stages": {
+            "redline-prepare": {
+              "ms": 107.59999999403954,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 457.90000000596046,
+              "detail": {
+                "parseMs": 185.59999999403954,
+                "matchMs": 116.40000000596046,
+                "renderMs": 3.300000011920929,
+                "validateMs": 133.69999998807907,
+                "totalMs": 439
+              }
+            },
+            "redline-validation": {
+              "ms": 213,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 252.10000002384186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 111.80000001192093,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1075.7189580000013,
+          "stages": {
+            "redline-prepare": {
+              "ms": 102.69999998807907,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 469.90000000596046,
+              "detail": {
+                "parseMs": 191.7999999821186,
+                "matchMs": 117.90000000596046,
+                "renderMs": 3.699999988079071,
+                "validateMs": 136.2000000178814,
+                "totalMs": 449.59999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 220.59999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 211.2000000178814,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 105.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1083.4517500000002,
+          "stages": {
+            "redline-prepare": {
+              "ms": 102.2000000178814,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 460.40000000596046,
+              "detail": {
+                "parseMs": 188.5,
+                "matchMs": 116.5,
+                "renderMs": 3.5,
+                "validateMs": 133.09999999403954,
+                "totalMs": 441.59999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 212.09999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 235.40000000596046,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 104.69999998807907,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1076.882290999998,
+          "stages": {
+            "redline-prepare": {
+              "ms": 103.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 466.30000001192093,
+              "detail": {
+                "parseMs": 192.19999998807907,
+                "matchMs": 117.7000000178814,
+                "renderMs": 3.699999988079071,
+                "validateMs": 132.30000001192093,
+                "totalMs": 445.90000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 223.19999998807907,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 208.09999999403954,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 103.90000000596046,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1068.2046659999978,
+          "stages": {
+            "redline-prepare": {
+              "ms": 103.10000002384186,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 462.69999998807907,
+              "detail": {
+                "parseMs": 190,
+                "matchMs": 116.5,
+                "renderMs": 3.2999999821186066,
+                "validateMs": 134.30000001192093,
+                "totalMs": 444.09999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 209,
               "detail": null
             },
             "redline-layout": {
@@ -1082,559 +1600,63 @@
           }
         },
         {
-          "readyMs": 1055.2655409999988,
+          "readyMs": 1058.3287500000006,
           "stages": {
             "redline-prepare": {
-              "ms": 102.09999999403954,
+              "ms": 100.2000000178814,
               "detail": null
             },
             "redline-worker": {
-              "ms": 456.19999998807907,
+              "ms": 457.7999999821186,
               "detail": {
-                "parseMs": 188.19999998807907,
-                "matchMs": 116.5,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 136,
-                "totalMs": 444.2999999821186
+                "parseMs": 186.19999998807907,
+                "matchMs": 114.90000000596046,
+                "renderMs": 3.199999988079071,
+                "validateMs": 133.2000000178814,
+                "totalMs": 437.5
               }
             },
             "redline-validation": {
-              "ms": 213.5,
+              "ms": 217,
               "detail": null
             },
             "redline-layout": {
-              "ms": 209.59999999403954,
+              "ms": 213.10000002384186,
               "detail": null
             },
             "redline-mode": {
-              "ms": 103.90000000596046,
+              "ms": 107.69999998807907,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1097.1215420000008,
+          "readyMs": 1093.354290999996,
           "stages": {
             "redline-prepare": {
-              "ms": 103.5,
+              "ms": 103.10000002384186,
               "detail": null
             },
             "redline-worker": {
-              "ms": 453,
-              "detail": {
-                "parseMs": 189.69999998807907,
-                "matchMs": 113,
-                "renderMs": 3.5,
-                "validateMs": 134.5,
-                "totalMs": 440.69999998807907
-              }
-            },
-            "redline-validation": {
-              "ms": 211.40000000596046,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 256.5,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 112.30000001192093,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1085.2462080000005,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.90000000596046,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 471.5,
-              "detail": {
-                "parseMs": 199.69999998807907,
-                "matchMs": 117.90000000596046,
-                "renderMs": 3.7000000178813934,
-                "validateMs": 137.5,
-                "totalMs": 458.80000001192093
-              }
-            },
-            "redline-validation": {
-              "ms": 214.59999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 211.5,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.09999999403954,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1092.5875420000011,
-          "stages": {
-            "redline-prepare": {
-              "ms": 120.7000000178814,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 461,
-              "detail": {
-                "parseMs": 193.30000001192093,
-                "matchMs": 113.2999999821186,
-                "renderMs": 3.5,
-                "validateMs": 134.80000001192093,
-                "totalMs": 444.90000000596046
-              }
-            },
-            "redline-validation": {
-              "ms": 212.40000000596046,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 229.59999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 119.2999999821186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1095.8192920000001,
-          "stages": {
-            "redline-prepare": {
-              "ms": 107.5,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 454.19999998807907,
-              "detail": {
-                "parseMs": 190.30000001192093,
-                "matchMs": 112.5,
-                "renderMs": 4,
-                "validateMs": 136.19999998807907,
-                "totalMs": 443
-              }
-            },
-            "redline-validation": {
-              "ms": 215.59999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 251.39999997615814,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 111.09999999403954,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1052.765459000002,
-          "stages": {
-            "redline-prepare": {
-              "ms": 104.5,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 450.2999999821186,
-              "detail": {
-                "parseMs": 188.90000000596046,
-                "matchMs": 113.09999999403954,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 133.19999998807907,
-                "totalMs": 438.7999999821186
-              }
-            },
-            "redline-validation": {
-              "ms": 210.7000000178814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 208.7999999821186,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 102.7999999821186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1080.557582999998,
-          "stages": {
-            "redline-prepare": {
-              "ms": 105.09999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 454.2000000178814,
-              "detail": {
-                "parseMs": 192.2000000178814,
-                "matchMs": 113.7999999821186,
-                "renderMs": 3.5,
-                "validateMs": 133.30000001192093,
-                "totalMs": 442.80000001192093
-              }
-            },
-            "redline-validation": {
-              "ms": 207.19999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 245.90000000596046,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 109.5,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1050.8599170000016,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.60000002384186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 454.59999999403954,
-              "detail": {
-                "parseMs": 191.5,
-                "matchMs": 111.7999999821186,
-                "renderMs": 3.5,
-                "validateMs": 132.80000001192093,
-                "totalMs": 439.59999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 208.19999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 211.30000001192093,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 105.40000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1093.1090000000004,
-          "stages": {
-            "redline-prepare": {
-              "ms": 125.80000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 453.09999999403954,
-              "detail": {
-                "parseMs": 189.7999999821186,
-                "matchMs": 114.10000002384186,
-                "renderMs": 3.699999988079071,
-                "validateMs": 134.09999999403954,
-                "totalMs": 441.69999998807907
-              }
-            },
-            "redline-validation": {
-              "ms": 212.80000001192093,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 231.59999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 120.10000002384186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1100.1782500000008,
-          "stages": {
-            "redline-prepare": {
-              "ms": 107.30000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 464.7999999821186,
+              "ms": 464.2999999821186,
               "detail": {
                 "parseMs": 191,
-                "matchMs": 112,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 134.69999998807907,
-                "totalMs": 441.2999999821186
+                "matchMs": 118.19999998807907,
+                "renderMs": 3.600000023841858,
+                "validateMs": 132.69999998807907,
+                "totalMs": 445.5
               }
             },
             "redline-validation": {
-              "ms": 210.09999999403954,
+              "ms": 217.5,
               "detail": null
             },
             "redline-layout": {
-              "ms": 243.30000001192093,
+              "ms": 240.40000000596046,
               "detail": null
             },
             "redline-mode": {
-              "ms": 103.59999999403954,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1060.5061669999996,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.30000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 451,
-              "detail": {
-                "parseMs": 187.19999998807907,
-                "matchMs": 114.40000000596046,
-                "renderMs": 3.699999988079071,
-                "validateMs": 134.10000002384186,
-                "totalMs": 439.40000000596046
-              }
-            },
-            "redline-validation": {
-              "ms": 210.39999997615814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 225,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 111.5,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1057.111417,
-          "stages": {
-            "redline-prepare": {
-              "ms": 106.5,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 448.7999999821186,
-              "detail": {
-                "parseMs": 189.5,
-                "matchMs": 111,
-                "renderMs": 3.9000000059604645,
-                "validateMs": 133,
-                "totalMs": 437.40000000596046
-              }
-            },
-            "redline-validation": {
-              "ms": 207.09999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 226.10000002384186,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 111.09999999403954,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1077.1190829999978,
-          "stages": {
-            "redline-prepare": {
-              "ms": 107.09999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 463,
-              "detail": {
-                "parseMs": 190.90000000596046,
-                "matchMs": 111.90000000596046,
-                "renderMs": 3.300000011920929,
-                "validateMs": 133.89999997615814,
-                "totalMs": 440
-              }
-            },
-            "redline-validation": {
-              "ms": 208.10000002384186,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 229.59999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 103.69999998807907,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1041.1187919999975,
-          "stages": {
-            "redline-prepare": {
-              "ms": 101.90000000596046,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 447.5,
-              "detail": {
-                "parseMs": 188.09999999403954,
-                "matchMs": 112.10000002384186,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 132.2999999821186,
-                "totalMs": 436.09999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 209.2000000178814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 208.69999998807907,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 102.40000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1061.1699999999983,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.90000000596046,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 451.59999999403954,
-              "detail": {
-                "parseMs": 190.60000002384186,
-                "matchMs": 112.19999998807907,
-                "renderMs": 3.5,
-                "validateMs": 133.90000000596046,
-                "totalMs": 440.2000000178814
-              }
-            },
-            "redline-validation": {
-              "ms": 200.5,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 235.90000000596046,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.19999998807907,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1052.0172920000005,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.09999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 454.90000000596046,
-              "detail": {
-                "parseMs": 192.5,
-                "matchMs": 110.60000002384186,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 134.2000000178814,
-                "totalMs": 441.10000002384186
-              }
-            },
-            "redline-validation": {
-              "ms": 206.19999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 211,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.7999999821186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1037.697709,
-          "stages": {
-            "redline-prepare": {
-              "ms": 105,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 448.59999999403954,
-              "detail": {
-                "parseMs": 188.2000000178814,
-                "matchMs": 111.59999999403954,
-                "renderMs": 3.699999988079071,
-                "validateMs": 133.40000000596046,
-                "totalMs": 436.90000000596046
-              }
-            },
-            "redline-validation": {
-              "ms": 204.7000000178814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 210.5,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 103.30000001192093,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1082.723458000004,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.80000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 464.59999999403954,
-              "detail": {
-                "parseMs": 194.09999999403954,
-                "matchMs": 115.80000001192093,
-                "renderMs": 3.5,
-                "validateMs": 133.59999999403954,
-                "totalMs": 447
-              }
-            },
-            "redline-validation": {
-              "ms": 210.09999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 222.40000000596046,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 103.7000000178814,
+              "ms": 105.30000001192093,
               "detail": null
             }
           }
@@ -1643,18 +1665,19 @@
       "modes": [
         {
           "mode": "Original",
-          "readyMs": 221.61708299999736
+          "readyMs": 239.71345800000563
         },
         {
           "mode": "Final",
-          "readyMs": 206.1521670000002
+          "readyMs": 219.95987500000047
         }
       ],
       "wholeBodyRequests": [
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1662,7 +1685,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1670,7 +1694,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1678,7 +1703,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1686,7 +1712,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1694,7 +1721,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1702,7 +1730,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1710,7 +1739,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1718,7 +1748,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1726,7 +1757,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1734,7 +1766,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1742,7 +1775,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1750,7 +1784,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1758,7 +1793,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1766,7 +1802,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1774,7 +1811,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1782,7 +1820,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1790,7 +1829,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1798,7 +1838,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1806,7 +1847,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1814,7 +1856,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989882
@@ -1825,7 +1868,7 @@
         "unchanged": 5880,
         "markedEdited": 120
       },
-      "p95": 1131.6741669999992,
+      "p95": 1125.6860419999994,
       "targetMs": 2000,
       "targetPassed": true
     },
@@ -1838,94 +1881,94 @@
       },
       "cold": [
         {
-          "readyMs": 1134.2851250000022,
+          "readyMs": 1120.5485410000038,
           "stages": {
             "redline-prepare": {
-              "ms": 112.90000000596046,
+              "ms": 112,
               "detail": null
             },
             "redline-worker": {
-              "ms": 475.40000000596046,
+              "ms": 465.59999999403954,
               "detail": {
-                "parseMs": 205,
-                "matchMs": 117.40000000596046,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 134.90000000596046,
-                "totalMs": 460.90000000596046
+                "parseMs": 196.5,
+                "matchMs": 116.90000000596046,
+                "renderMs": 3.199999988079071,
+                "validateMs": 130.2000000178814,
+                "totalMs": 446.80000001192093
               }
             },
             "redline-validation": {
-              "ms": 240.09999999403954,
+              "ms": 243.5,
               "detail": null
             },
             "redline-layout": {
-              "ms": 231.09999999403954,
+              "ms": 229.69999998807907,
               "detail": null
             },
             "redline-mode": {
-              "ms": 114.7999999821186,
+              "ms": 114.30000001192093,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1122.526665999998,
+          "readyMs": 1116.0369160000046,
           "stages": {
             "redline-prepare": {
-              "ms": 104.5,
+              "ms": 103,
               "detail": null
             },
             "redline-worker": {
-              "ms": 458.7000000178814,
+              "ms": 462.59999999403954,
               "detail": {
-                "parseMs": 196.2000000178814,
-                "matchMs": 112.89999997615814,
-                "renderMs": 3.5,
-                "validateMs": 133.40000000596046,
-                "totalMs": 446
+                "parseMs": 195.09999999403954,
+                "matchMs": 115.09999999403954,
+                "renderMs": 3.2000000178813934,
+                "validateMs": 130.69999998807907,
+                "totalMs": 444.09999999403954
               }
             },
             "redline-validation": {
-              "ms": 217.19999998807907,
+              "ms": 218.7000000178814,
               "detail": null
             },
             "redline-layout": {
-              "ms": 250.5,
+              "ms": 248.7999999821186,
               "detail": null
             },
             "redline-mode": {
-              "ms": 134.69999998807907,
+              "ms": 110.90000000596046,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1116.898500000003,
+          "readyMs": 1110.848125000004,
           "stages": {
             "redline-prepare": {
-              "ms": 109.30000001192093,
+              "ms": 104.09999999403954,
               "detail": null
             },
             "redline-worker": {
-              "ms": 457.59999999403954,
+              "ms": 463.5,
               "detail": {
-                "parseMs": 195.40000000596046,
-                "matchMs": 113,
-                "renderMs": 4.0999999940395355,
-                "validateMs": 133.30000001192093,
-                "totalMs": 445.80000001192093
+                "parseMs": 193.30000001192093,
+                "matchMs": 115.5,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 132,
+                "totalMs": 444.2000000178814
               }
             },
             "redline-validation": {
-              "ms": 218.19999998807907,
+              "ms": 218.40000000596046,
               "detail": null
             },
             "redline-layout": {
-              "ms": 247.30000001192093,
+              "ms": 238.19999998807907,
               "detail": null
             },
             "redline-mode": {
-              "ms": 134.5,
+              "ms": 127.30000001192093,
               "detail": null
             }
           }
@@ -1933,276 +1976,28 @@
       ],
       "warm": [
         {
-          "readyMs": 1124.298542000004,
+          "readyMs": 1091.4524999999994,
           "stages": {
             "redline-prepare": {
-              "ms": 105.09999999403954,
+              "ms": 103.19999998807907,
               "detail": null
             },
             "redline-worker": {
-              "ms": 490.5,
+              "ms": 467,
               "detail": {
-                "parseMs": 201.69999998807907,
-                "matchMs": 131.80000001192093,
-                "renderMs": 4.899999976158142,
-                "validateMs": 140.30000001192093,
-                "totalMs": 478.69999998807907
-              }
-            },
-            "redline-validation": {
-              "ms": 227.69999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 222.09999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 106.19999998807907,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1148.524040999997,
-          "stages": {
-            "redline-prepare": {
-              "ms": 113.7999999821186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 480.90000000596046,
-              "detail": {
-                "parseMs": 203.90000000596046,
-                "matchMs": 115.69999998807907,
-                "renderMs": 3.300000011920929,
-                "validateMs": 135.59999999403954,
-                "totalMs": 458.5
-              }
-            },
-            "redline-validation": {
-              "ms": 213.19999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 261.69999998807907,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 147.2999999821186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1063.5514169999951,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.09999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 469.5,
-              "detail": {
-                "parseMs": 195.5,
-                "matchMs": 115.59999999403954,
+                "parseMs": 197.10000002384186,
+                "matchMs": 115.19999998807907,
                 "renderMs": 3.5,
-                "validateMs": 134.40000000596046,
-                "totalMs": 449
+                "validateMs": 131.90000000596046,
+                "totalMs": 447.7000000178814
               }
             },
             "redline-validation": {
-              "ms": 213.69999998807907,
+              "ms": 219.09999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 207.2000000178814,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 102.40000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1097.038999999997,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.2999999821186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 458.90000000596046,
-              "detail": {
-                "parseMs": 198.09999999403954,
-                "matchMs": 112.09999999403954,
-                "renderMs": 3.5,
-                "validateMs": 133.59999999403954,
-                "totalMs": 447.2999999821186
-              }
-            },
-            "redline-validation": {
-              "ms": 207.09999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 257.7000000178814,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1064.5708749999976,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.10000002384186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 465.59999999403954,
-              "detail": {
-                "parseMs": 195.59999999403954,
-                "matchMs": 113.7000000178814,
-                "renderMs": 3.199999988079071,
-                "validateMs": 135.30000001192093,
-                "totalMs": 447.80000001192093
-              }
-            },
-            "redline-validation": {
-              "ms": 215.59999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 210.40000000596046,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.2999999821186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1103.0265830000062,
-          "stages": {
-            "redline-prepare": {
-              "ms": 124.5,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 459.5,
-              "detail": {
-                "parseMs": 196.19999998807907,
-                "matchMs": 113.40000000596046,
-                "renderMs": 3.800000011920929,
-                "validateMs": 134.2999999821186,
-                "totalMs": 447.69999998807907
-              }
-            },
-            "redline-validation": {
-              "ms": 217.5,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 231.09999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 121.19999998807907,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1105.175083000002,
-          "stages": {
-            "redline-prepare": {
-              "ms": 106.5,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 463,
-              "detail": {
-                "parseMs": 196.2999999821186,
-                "matchMs": 114.2000000178814,
-                "renderMs": 3.899999976158142,
-                "validateMs": 137.40000000596046,
-                "totalMs": 451.7999999821186
-              }
-            },
-            "redline-validation": {
-              "ms": 223.09999999403954,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 240.5,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 125.39999997615814,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1103.221958000002,
-          "stages": {
-            "redline-prepare": {
-              "ms": 104.09999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 471.90000000596046,
-              "detail": {
-                "parseMs": 205.7999999821186,
-                "matchMs": 114.30000001192093,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 135.69999998807907,
-                "totalMs": 459.39999997615814
-              }
-            },
-            "redline-validation": {
-              "ms": 213.40000000596046,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 243.30000001192093,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.80000001192093,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1069.715333,
-          "stages": {
-            "redline-prepare": {
-              "ms": 101.60000002384186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 473,
-              "detail": {
-                "parseMs": 202.80000001192093,
-                "matchMs": 117.40000000596046,
-                "renderMs": 3.899999976158142,
-                "validateMs": 136.60000002384186,
-                "totalMs": 460.7000000178814
-              }
-            },
-            "redline-validation": {
-              "ms": 215.69999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 207.30000001192093,
+              "ms": 230.5,
               "detail": null
             },
             "redline-mode": {
@@ -2212,55 +2007,334 @@
           }
         },
         {
-          "readyMs": 1099.4135000000024,
+          "readyMs": 1061.867250000003,
           "stages": {
             "redline-prepare": {
-              "ms": 106,
+              "ms": 102.80000001192093,
               "detail": null
             },
             "redline-worker": {
-              "ms": 460.5,
+              "ms": 463.5,
               "detail": {
-                "parseMs": 197.60000002384186,
-                "matchMs": 115,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 132.59999999403954,
-                "totalMs": 448.80000001192093
+                "parseMs": 194.30000001192093,
+                "matchMs": 115.30000001192093,
+                "renderMs": 3.0999999940395355,
+                "validateMs": 131.90000000596046,
+                "totalMs": 444.60000002384186
               }
             },
             "redline-validation": {
-              "ms": 212.19999998807907,
+              "ms": 218,
               "detail": null
             },
             "redline-layout": {
-              "ms": 244,
+              "ms": 207.59999999403954,
               "detail": null
             },
             "redline-mode": {
-              "ms": 109.90000000596046,
+              "ms": 103.2999999821186,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1092.4743750000052,
+          "readyMs": 1098.984666999997,
           "stages": {
             "redline-prepare": {
-              "ms": 114,
+              "ms": 102.5,
               "detail": null
             },
             "redline-worker": {
-              "ms": 464.2999999821186,
+              "ms": 463.80000001192093,
               "detail": {
-                "parseMs": 195.60000002384186,
-                "matchMs": 112.39999997615814,
-                "renderMs": 3.7000000178813934,
-                "validateMs": 135.7999999821186,
-                "totalMs": 447.5
+                "parseMs": 194.39999997615814,
+                "matchMs": 115.30000001192093,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 132.5,
+                "totalMs": 445.59999999403954
               }
             },
             "redline-validation": {
-              "ms": 215,
+              "ms": 212.7999999821186,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 247.5,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 109.09999999403954,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1121.915875000006,
+          "stages": {
+            "redline-prepare": {
+              "ms": 100.59999999403954,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 489.40000000596046,
+              "detail": {
+                "parseMs": 193.2999999821186,
+                "matchMs": 129.2000000178814,
+                "renderMs": 4,
+                "validateMs": 142.69999998807907,
+                "totalMs": 469.19999998807907
+              }
+            },
+            "redline-validation": {
+              "ms": 237.2000000178814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 212.69999998807907,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 107.10000002384186,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1066.6185410000035,
+          "stages": {
+            "redline-prepare": {
+              "ms": 102.60000002384186,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 460.89999997615814,
+              "detail": {
+                "parseMs": 194.09999999403954,
+                "matchMs": 113.09999999403954,
+                "renderMs": 3.7000000178813934,
+                "validateMs": 131,
+                "totalMs": 441.90000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 208.2000000178814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 220.7999999821186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 103.2000000178814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1129.4501669999954,
+          "stages": {
+            "redline-prepare": {
+              "ms": 113.59999999403954,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 485.69999998807907,
+              "detail": {
+                "parseMs": 193.09999999403954,
+                "matchMs": 115.40000000596046,
+                "renderMs": 3.5999999940395355,
+                "validateMs": 151,
+                "totalMs": 463.09999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 222.59999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 233.40000000596046,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 122.09999999403954,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1135.4728329999998,
+          "stages": {
+            "redline-prepare": {
+              "ms": 108.30000001192093,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 470.7999999821186,
+              "detail": {
+                "parseMs": 196.59999999403954,
+                "matchMs": 117.59999999403954,
+                "renderMs": 3.100000023841858,
+                "validateMs": 134.5,
+                "totalMs": 451.80000001192093
+              }
+            },
+            "redline-validation": {
+              "ms": 227.90000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 254.2000000178814,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 113.59999999403954,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1074.6165000000037,
+          "stages": {
+            "redline-prepare": {
+              "ms": 105.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 468.40000000596046,
+              "detail": {
+                "parseMs": 198.59999999403954,
+                "matchMs": 115.09999999403954,
+                "renderMs": 3.199999988079071,
+                "validateMs": 132.60000002384186,
+                "totalMs": 449.5
+              }
+            },
+            "redline-validation": {
+              "ms": 215.89999997615814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 213.19999998807907,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 106.2999999821186,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1100.427125000002,
+          "stages": {
+            "redline-prepare": {
+              "ms": 104.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 469.40000000596046,
+              "detail": {
+                "parseMs": 198.09999999403954,
+                "matchMs": 117.30000001192093,
+                "renderMs": 3.5999999940395355,
+                "validateMs": 131.40000000596046,
+                "totalMs": 450.40000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 212.59999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 246.09999999403954,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 110.2999999821186,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1073.6219580000034,
+          "stages": {
+            "redline-prepare": {
+              "ms": 101.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 464.2000000178814,
+              "detail": {
+                "parseMs": 193.5,
+                "matchMs": 115.40000000596046,
+                "renderMs": 3.199999988079071,
+                "validateMs": 131.30000001192093,
+                "totalMs": 443.40000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 223.19999998807907,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 211,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 105.90000000596046,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1114.8077500000072,
+          "stages": {
+            "redline-prepare": {
+              "ms": 124.60000002384186,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 463.39999997615814,
+              "detail": {
+                "parseMs": 194.40000000596046,
+                "matchMs": 114.80000001192093,
+                "renderMs": 3.199999988079071,
+                "validateMs": 132.69999998807907,
+                "totalMs": 445.09999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 225.30000001192093,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 232.19999998807907,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 123.09999999403954,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1103.4370000000054,
+          "stages": {
+            "redline-prepare": {
+              "ms": 107.60000002384186,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 468.39999997615814,
+              "detail": {
+                "parseMs": 195.80000001192093,
+                "matchMs": 114.7999999821186,
+                "renderMs": 3.5,
+                "validateMs": 133,
+                "totalMs": 447.09999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 224.90000000596046,
               "detail": null
             },
             "redline-layout": {
@@ -2268,286 +2342,255 @@
               "detail": null
             },
             "redline-mode": {
-              "ms": 118.80000001192093,
+              "ms": 103.09999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1099.8327500000014,
+          "readyMs": 1083.3730000000069,
           "stages": {
             "redline-prepare": {
-              "ms": 109.30000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 461.2999999821186,
-              "detail": {
-                "parseMs": 197.90000000596046,
-                "matchMs": 113.40000000596046,
-                "renderMs": 3.5,
-                "validateMs": 134.69999998807907,
-                "totalMs": 449.5
-              }
-            },
-            "redline-validation": {
-              "ms": 223,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 235,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 123.2000000178814,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1095.8335829999996,
-          "stages": {
-            "redline-prepare": {
-              "ms": 105.7999999821186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 469.10000002384186,
-              "detail": {
-                "parseMs": 201.90000000596046,
-                "matchMs": 114.09999999403954,
-                "renderMs": 3.800000011920929,
-                "validateMs": 136.69999998807907,
-                "totalMs": 456.5
-              }
-            },
-            "redline-validation": {
-              "ms": 216.39999997615814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 234.60000002384186,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.2999999821186,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1082.758209000007,
-          "stages": {
-            "redline-prepare": {
-              "ms": 104.40000000596046,
+              "ms": 103.5,
               "detail": null
             },
             "redline-worker": {
               "ms": 469.80000001192093,
               "detail": {
-                "parseMs": 202,
-                "matchMs": 115.39999997615814,
-                "renderMs": 3.9000000059604645,
-                "validateMs": 135.40000000596046,
-                "totalMs": 456.69999998807907
+                "parseMs": 197.7000000178814,
+                "matchMs": 116.19999998807907,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 133.59999999403954,
+                "totalMs": 450.90000000596046
               }
             },
             "redline-validation": {
-              "ms": 222,
+              "ms": 218.40000000596046,
               "detail": null
             },
             "redline-layout": {
-              "ms": 211.19999998807907,
+              "ms": 221.19999998807907,
               "detail": null
             },
             "redline-mode": {
-              "ms": 104.09999999403954,
+              "ms": 109.59999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1086.8824579999928,
+          "readyMs": 1115.6673329999903,
           "stages": {
             "redline-prepare": {
-              "ms": 108.7000000178814,
+              "ms": 105.2999999821186,
               "detail": null
             },
             "redline-worker": {
-              "ms": 463.5,
+              "ms": 464.2000000178814,
               "detail": {
-                "parseMs": 198.2000000178814,
-                "matchMs": 115,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 134.80000001192093,
-                "totalMs": 451.80000001192093
+                "parseMs": 192.69999998807907,
+                "matchMs": 115.80000001192093,
+                "renderMs": 3.0999999940395355,
+                "validateMs": 133.19999998807907,
+                "totalMs": 444.7999999821186
               }
             },
             "redline-validation": {
-              "ms": 215,
+              "ms": 216.7999999821186,
               "detail": null
             },
             "redline-layout": {
-              "ms": 226.90000000596046,
+              "ms": 254.5,
               "detail": null
             },
             "redline-mode": {
-              "ms": 111.80000001192093,
+              "ms": 111.7000000178814,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1094.3633750000008,
+          "readyMs": 1134.2899170000019,
           "stages": {
             "redline-prepare": {
-              "ms": 104.40000000596046,
+              "ms": 102.59999999403954,
               "detail": null
             },
             "redline-worker": {
-              "ms": 471,
+              "ms": 515.9000000059605,
               "detail": {
-                "parseMs": 200.2000000178814,
-                "matchMs": 115.09999999403954,
+                "parseMs": 238.5,
+                "matchMs": 118.59999999403954,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 134.40000000596046,
+                "totalMs": 494.90000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 222.59999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 216.40000000596046,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 106.2000000178814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1115.9729999999981,
+          "stages": {
+            "redline-prepare": {
+              "ms": 108,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 487.39999997615814,
+              "detail": {
+                "parseMs": 203.59999999403954,
+                "matchMs": 119.19999998807907,
+                "renderMs": 3.7000000178813934,
+                "validateMs": 140.89999997615814,
+                "totalMs": 467.39999997615814
+              }
+            },
+            "redline-validation": {
+              "ms": 225,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 220.59999999403954,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 108.90000000596046,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1186.1539159999957,
+          "stages": {
+            "redline-prepare": {
+              "ms": 112.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 527.1999999880791,
+              "detail": {
+                "parseMs": 216.59999999403954,
+                "matchMs": 131.2000000178814,
+                "renderMs": 4.199999988079071,
+                "validateMs": 142.69999998807907,
+                "totalMs": 494.69999998807907
+              }
+            },
+            "redline-validation": {
+              "ms": 233.7000000178814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 234.80000001192093,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 106.80000001192093,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1125.9767920000013,
+          "stages": {
+            "redline-prepare": {
+              "ms": 104.7999999821186,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 496.90000000596046,
+              "detail": {
+                "parseMs": 210.80000001192093,
+                "matchMs": 124.5,
                 "renderMs": 3.699999988079071,
-                "validateMs": 134.30000001192093,
-                "totalMs": 453.30000001192093
+                "validateMs": 137.90000000596046,
+                "totalMs": 476.90000000596046
               }
             },
             "redline-validation": {
-              "ms": 215.69999998807907,
+              "ms": 226.09999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 223.60000002384186,
+              "ms": 218.80000001192093,
               "detail": null
             },
             "redline-mode": {
-              "ms": 104.60000002384186,
+              "ms": 108.7999999821186,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1074.2530839999963,
+          "readyMs": 1257.6231249999983,
           "stages": {
             "redline-prepare": {
-              "ms": 104.40000000596046,
+              "ms": 108.2000000178814,
               "detail": null
             },
             "redline-worker": {
-              "ms": 469.59999999403954,
+              "ms": 551.2999999821186,
               "detail": {
-                "parseMs": 200.80000001192093,
-                "matchMs": 114.2999999821186,
-                "renderMs": 3.5,
-                "validateMs": 139.09999999403954,
-                "totalMs": 457.69999998807907
-              }
-            },
-            "redline-validation": {
-              "ms": 215.5,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 209.69999998807907,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.30000001192093,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1085.9198749999923,
-          "stages": {
-            "redline-prepare": {
-              "ms": 106.39999997615814,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 466.2000000178814,
-              "detail": {
-                "parseMs": 198.7999999821186,
-                "matchMs": 113.59999999403954,
-                "renderMs": 4,
-                "validateMs": 137.7000000178814,
-                "totalMs": 454.09999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 208.69999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 236,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 103.5,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1059.4142920000013,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.30000001192093,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 461.59999999403954,
-              "detail": {
-                "parseMs": 193.5,
-                "matchMs": 113.40000000596046,
+                "parseMs": 244.19999998807907,
+                "matchMs": 136.10000002384186,
                 "renderMs": 3.699999988079071,
-                "validateMs": 133.2000000178814,
-                "totalMs": 443.80000001192093
+                "validateMs": 143.09999999403954,
+                "totalMs": 527.0999999940395
               }
             },
             "redline-validation": {
-              "ms": 212.90000000596046,
+              "ms": 225.80000001192093,
               "detail": null
             },
             "redline-layout": {
-              "ms": 209.5,
+              "ms": 243.09999999403954,
               "detail": null
             },
             "redline-mode": {
-              "ms": 103.89999997615814,
+              "ms": 107.90000000596046,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1073.8554169999989,
+          "readyMs": 1099.6744580000086,
           "stages": {
             "redline-prepare": {
-              "ms": 103.90000000596046,
+              "ms": 104.5,
               "detail": null
             },
             "redline-worker": {
-              "ms": 467.09999999403954,
+              "ms": 475.80000001192093,
               "detail": {
-                "parseMs": 199.90000000596046,
-                "matchMs": 116.39999997615814,
-                "renderMs": 3.5,
-                "validateMs": 135.90000000596046,
-                "totalMs": 455.69999998807907
+                "parseMs": 198,
+                "matchMs": 118.5,
+                "renderMs": 3.600000023841858,
+                "validateMs": 134.69999998807907,
+                "totalMs": 454.80000001192093
               }
             },
             "redline-validation": {
-              "ms": 207.59999999403954,
+              "ms": 225.69999998807907,
               "detail": null
             },
             "redline-layout": {
-              "ms": 225.90000000596046,
+              "ms": 211.5,
               "detail": null
             },
             "redline-mode": {
-              "ms": 103.30000001192093,
+              "ms": 104.5,
               "detail": null
             }
           }
@@ -2556,18 +2599,19 @@
       "modes": [
         {
           "mode": "Original",
-          "readyMs": 225.4452500000043
+          "readyMs": 238.7204170000041
         },
         {
           "mode": "Final",
-          "readyMs": 205.11133300000802
+          "readyMs": 214.13904199999524
         }
       ],
       "wholeBodyRequests": [
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2575,7 +2619,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2583,7 +2628,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2591,7 +2637,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2599,7 +2646,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2607,7 +2655,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2615,7 +2664,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2623,7 +2673,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2631,7 +2682,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2639,7 +2691,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2647,7 +2700,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2655,7 +2709,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2663,7 +2718,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2671,7 +2727,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2679,7 +2736,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2687,7 +2745,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2695,7 +2754,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2703,7 +2763,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2711,7 +2772,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2719,7 +2781,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2727,7 +2790,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991581,
           "after": 989901
@@ -2738,7 +2802,7 @@
         "unchanged": 5880,
         "markedEdited": 120
       },
-      "p95": 1124.298542000004,
+      "p95": 1186.1539159999957,
       "targetMs": 2000,
       "targetPassed": true
     },
@@ -2751,94 +2815,94 @@
       },
       "cold": [
         {
-          "readyMs": 1124.613584000006,
+          "readyMs": 1138.5871659999975,
           "stages": {
             "redline-prepare": {
-              "ms": 115.19999998807907,
+              "ms": 111.80000001192093,
               "detail": null
             },
             "redline-worker": {
-              "ms": 463,
+              "ms": 478.19999998807907,
               "detail": {
-                "parseMs": 197,
-                "matchMs": 114.80000001192093,
-                "renderMs": 4.0999999940395355,
-                "validateMs": 134,
-                "totalMs": 449.90000000596046
+                "parseMs": 196.59999999403954,
+                "matchMs": 121.40000000596046,
+                "renderMs": 3.5,
+                "validateMs": 136.59999999403954,
+                "totalMs": 458.09999999403954
               }
             },
             "redline-validation": {
-              "ms": 235.2000000178814,
+              "ms": 243.80000001192093,
               "detail": null
             },
             "redline-layout": {
-              "ms": 232.69999998807907,
+              "ms": 234.40000000596046,
               "detail": null
             },
             "redline-mode": {
-              "ms": 115.7000000178814,
+              "ms": 117.09999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1135.068333000003,
+          "readyMs": 1141.0833329999878,
           "stages": {
             "redline-prepare": {
-              "ms": 105.10000002384186,
+              "ms": 104.39999997615814,
               "detail": null
             },
             "redline-worker": {
-              "ms": 451.69999998807907,
+              "ms": 466.30000001192093,
               "detail": {
-                "parseMs": 188.5,
-                "matchMs": 112.90000000596046,
-                "renderMs": 3.699999988079071,
-                "validateMs": 133.5,
-                "totalMs": 438.59999999403954
+                "parseMs": 189.89999997615814,
+                "matchMs": 119,
+                "renderMs": 3.600000023841858,
+                "validateMs": 135.2999999821186,
+                "totalMs": 447.7999999821186
               }
             },
             "redline-validation": {
-              "ms": 215.5,
+              "ms": 220,
               "detail": null
             },
             "redline-layout": {
-              "ms": 240.5,
+              "ms": 248.80000001192093,
               "detail": null
             },
             "redline-mode": {
-              "ms": 127.30000001192093,
+              "ms": 134.09999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1175.9871659999917,
+          "readyMs": 1199.409832999998,
           "stages": {
             "redline-prepare": {
-              "ms": 106.80000001192093,
+              "ms": 109.80000001192093,
               "detail": null
             },
             "redline-worker": {
-              "ms": 486.69999998807907,
+              "ms": 499.30000001192093,
               "detail": {
-                "parseMs": 219.7999999821186,
-                "matchMs": 113.60000002384186,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 136.30000001192093,
-                "totalMs": 473.5
+                "parseMs": 189.89999997615814,
+                "matchMs": 120.60000002384186,
+                "renderMs": 3.5,
+                "validateMs": 165.7999999821186,
+                "totalMs": 479.7999999821186
               }
             },
             "redline-validation": {
-              "ms": 216.09999999403954,
+              "ms": 244.09999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 247.5,
+              "ms": 227.19999998807907,
               "detail": null
             },
             "redline-mode": {
-              "ms": 133.59999999403954,
+              "ms": 113.40000000596046,
               "detail": null
             }
           }
@@ -2846,400 +2910,462 @@
       ],
       "warm": [
         {
-          "readyMs": 1095.391208000001,
+          "readyMs": 1137.0674169999984,
           "stages": {
             "redline-prepare": {
-              "ms": 104.69999998807907,
+              "ms": 111.69999998807907,
               "detail": null
             },
             "redline-worker": {
-              "ms": 460,
+              "ms": 474.2000000178814,
               "detail": {
-                "parseMs": 194.09999999403954,
-                "matchMs": 113.40000000596046,
-                "renderMs": 3.699999988079071,
-                "validateMs": 136.59999999403954,
-                "totalMs": 447.7999999821186
+                "parseMs": 195.80000001192093,
+                "matchMs": 120.30000001192093,
+                "renderMs": 3.399999976158142,
+                "validateMs": 135.7000000178814,
+                "totalMs": 455.2000000178814
               }
             },
             "redline-validation": {
-              "ms": 212.60000002384186,
+              "ms": 231.69999998807907,
               "detail": null
             },
             "redline-layout": {
-              "ms": 243.40000000596046,
+              "ms": 244.69999998807907,
               "detail": null
             },
             "redline-mode": {
-              "ms": 104.40000000596046,
+              "ms": 113.09999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1076.7274170000019,
+          "readyMs": 1129.9650419999962,
           "stages": {
             "redline-prepare": {
-              "ms": 105.90000000596046,
+              "ms": 104.80000001192093,
               "detail": null
             },
             "redline-worker": {
-              "ms": 463.40000000596046,
+              "ms": 479.80000001192093,
               "detail": {
-                "parseMs": 195.5,
-                "matchMs": 113.40000000596046,
-                "renderMs": 4.0999999940395355,
-                "validateMs": 137.80000001192093,
-                "totalMs": 450.80000001192093
-              }
-            },
-            "redline-validation": {
-              "ms": 216.39999997615814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 214.7000000178814,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 106.90000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1075.018624999997,
-          "stages": {
-            "redline-prepare": {
-              "ms": 106.69999998807907,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 457.30000001192093,
-              "detail": {
-                "parseMs": 191.80000001192093,
-                "matchMs": 113.59999999403954,
-                "renderMs": 3.699999988079071,
-                "validateMs": 136,
-                "totalMs": 445.09999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 208.89999997615814,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 229.90000000596046,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 114.40000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1085.8253750000003,
-          "stages": {
-            "redline-prepare": {
-              "ms": 104.59999999403954,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 464.5,
-              "detail": {
-                "parseMs": 194.59999999403954,
-                "matchMs": 113.5,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 134.7000000178814,
-                "totalMs": 446.59999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 210,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 225.09999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 105.5,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1073.518790999995,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.2999999821186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 460.60000002384186,
-              "detail": {
-                "parseMs": 193.80000001192093,
-                "matchMs": 112.40000000596046,
-                "renderMs": 3.7999999821186066,
-                "validateMs": 138.60000002384186,
-                "totalMs": 448.60000002384186
-              }
-            },
-            "redline-validation": {
-              "ms": 214.69999998807907,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 218.30000001192093,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 108.90000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1112.050500000012,
-          "stages": {
-            "redline-prepare": {
-              "ms": 127.2000000178814,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 458.5,
-              "detail": {
-                "parseMs": 193.2999999821186,
-                "matchMs": 113.40000000596046,
+                "parseMs": 193.30000001192093,
+                "matchMs": 120.19999998807907,
                 "renderMs": 3.5999999940395355,
-                "validateMs": 136.2000000178814,
-                "totalMs": 446.5
+                "validateMs": 136.60000002384186,
+                "totalMs": 453.7000000178814
               }
             },
             "redline-validation": {
-              "ms": 211.59999999403954,
+              "ms": 226.89999997615814,
               "detail": null
             },
             "redline-layout": {
-              "ms": 237.69999998807907,
+              "ms": 238.40000000596046,
               "detail": null
             },
             "redline-mode": {
-              "ms": 123.19999998807907,
+              "ms": 106.09999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1116.369458000001,
+          "readyMs": 1098.2750419999938,
+          "stages": {
+            "redline-prepare": {
+              "ms": 107,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 481.7000000178814,
+              "detail": {
+                "parseMs": 197.60000002384186,
+                "matchMs": 121,
+                "renderMs": 3.2999999821186066,
+                "validateMs": 140.30000001192093,
+                "totalMs": 462.2000000178814
+              }
+            },
+            "redline-validation": {
+              "ms": 223,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 212.7999999821186,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 106.30000001192093,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1135.085791999998,
+          "stages": {
+            "redline-prepare": {
+              "ms": 108.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 480.2000000178814,
+              "detail": {
+                "parseMs": 199.19999998807907,
+                "matchMs": 120.5,
+                "renderMs": 3.7000000178813934,
+                "validateMs": 136,
+                "totalMs": 459.40000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 224.7999999821186,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 250.40000000596046,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 116.19999998807907,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1086.7130830000096,
+          "stages": {
+            "redline-prepare": {
+              "ms": 105.09999999403954,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 469.40000000596046,
+              "detail": {
+                "parseMs": 192.09999999403954,
+                "matchMs": 117.40000000596046,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 135.19999998807907,
+                "totalMs": 448.09999999403954
+              }
+            },
+            "redline-validation": {
+              "ms": 219.80000001192093,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 215,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 109.7000000178814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1115.9959579999995,
+          "stages": {
+            "redline-prepare": {
+              "ms": 120.5,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 468.40000000596046,
+              "detail": {
+                "parseMs": 188.80000001192093,
+                "matchMs": 118.2999999821186,
+                "renderMs": 3.5,
+                "validateMs": 136.40000000596046,
+                "totalMs": 447
+              }
+            },
+            "redline-validation": {
+              "ms": 222.40000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 233,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 122.80000001192093,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1138.2755000000034,
           "stages": {
             "redline-prepare": {
               "ms": 109.30000001192093,
               "detail": null
             },
             "redline-worker": {
-              "ms": 456.90000000596046,
+              "ms": 470.40000000596046,
               "detail": {
-                "parseMs": 193.80000001192093,
-                "matchMs": 111.7999999821186,
-                "renderMs": 3.800000011920929,
-                "validateMs": 135.90000000596046,
-                "totalMs": 445.30000001192093
+                "parseMs": 191.19999998807907,
+                "matchMs": 119.30000001192093,
+                "renderMs": 3.5,
+                "validateMs": 137.39999997615814,
+                "totalMs": 451.39999997615814
               }
             },
             "redline-validation": {
-              "ms": 217.39999997615814,
+              "ms": 225.09999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 243.59999999403954,
+              "ms": 254.69999998807907,
               "detail": null
             },
             "redline-mode": {
-              "ms": 129.30000001192093,
+              "ms": 113.90000000596046,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1182.374708999996,
+          "readyMs": 1074.499416999999,
           "stages": {
             "redline-prepare": {
-              "ms": 106,
+              "ms": 105.2000000178814,
               "detail": null
             },
             "redline-worker": {
-              "ms": 556.5999999940395,
+              "ms": 468.7999999821186,
               "detail": {
-                "parseMs": 204.09999999403954,
-                "matchMs": 145.80000001192093,
-                "renderMs": 5.5,
-                "validateMs": 177.19999998807907,
-                "totalMs": 532.5999999940395
+                "parseMs": 191.59999999403954,
+                "matchMs": 118.5,
+                "renderMs": 3.2000000178813934,
+                "validateMs": 136.19999998807907,
+                "totalMs": 449.5
               }
             },
             "redline-validation": {
-              "ms": 209.7000000178814,
+              "ms": 216.30000001192093,
               "detail": null
             },
             "redline-layout": {
-              "ms": 238.19999998807907,
+              "ms": 210.2999999821186,
               "detail": null
             },
             "redline-mode": {
-              "ms": 106.39999997615814,
+              "ms": 105,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1067.921875,
+          "readyMs": 1114.9737919999898,
+          "stages": {
+            "redline-prepare": {
+              "ms": 106.59999999403954,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 468,
+              "detail": {
+                "parseMs": 191.40000000596046,
+                "matchMs": 116.80000001192093,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 137.09999999403954,
+                "totalMs": 448.7000000178814
+              }
+            },
+            "redline-validation": {
+              "ms": 216.40000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 253.39999997615814,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 112.40000000596046,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1078.320584000001,
+          "stages": {
+            "redline-prepare": {
+              "ms": 103.69999998807907,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 463.2000000178814,
+              "detail": {
+                "parseMs": 188,
+                "matchMs": 117.80000001192093,
+                "renderMs": 3.5,
+                "validateMs": 133.59999999403954,
+                "totalMs": 442.90000000596046
+              }
+            },
+            "redline-validation": {
+              "ms": 221.90000000596046,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 209.09999999403954,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 104.30000001192093,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1122.2989170000073,
+          "stages": {
+            "redline-prepare": {
+              "ms": 119.40000000596046,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 478.2999999821186,
+              "detail": {
+                "parseMs": 197.10000002384186,
+                "matchMs": 119.39999997615814,
+                "renderMs": 3.5,
+                "validateMs": 135,
+                "totalMs": 455
+              }
+            },
+            "redline-validation": {
+              "ms": 220.2000000178814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 233.69999998807907,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 122.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1127.296875,
+          "stages": {
+            "redline-prepare": {
+              "ms": 106.40000000596046,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 464.80000001192093,
+              "detail": {
+                "parseMs": 188.40000000596046,
+                "matchMs": 117.19999998807907,
+                "renderMs": 3.300000011920929,
+                "validateMs": 136.90000000596046,
+                "totalMs": 445.80000001192093
+              }
+            },
+            "redline-validation": {
+              "ms": 226.59999999403954,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 254.80000001192093,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 113.39999997615814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1073.7324999999983,
           "stages": {
             "redline-prepare": {
               "ms": 105.40000000596046,
               "detail": null
             },
             "redline-worker": {
-              "ms": 468.2000000178814,
+              "ms": 467.2000000178814,
               "detail": {
-                "parseMs": 196,
-                "matchMs": 118.59999999403954,
-                "renderMs": 3.800000011920929,
-                "validateMs": 137.19999998807907,
-                "totalMs": 455.59999999403954
+                "parseMs": 189.5,
+                "matchMs": 119.69999998807907,
+                "renderMs": 3.4000000059604645,
+                "validateMs": 134.80000001192093,
+                "totalMs": 447.40000000596046
               }
             },
             "redline-validation": {
-              "ms": 209.7999999821186,
+              "ms": 215.09999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 209.2000000178814,
+              "ms": 210.59999999403954,
               "detail": null
             },
             "redline-mode": {
-              "ms": 103.2999999821186,
+              "ms": 104.59999999403954,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1097.5157499999914,
+          "readyMs": 1109.56749999999,
           "stages": {
             "redline-prepare": {
-              "ms": 106.89999997615814,
+              "ms": 105.09999999403954,
               "detail": null
             },
             "redline-worker": {
-              "ms": 463.5,
+              "ms": 463.19999998807907,
               "detail": {
-                "parseMs": 192.5,
-                "matchMs": 116.7999999821186,
-                "renderMs": 3.5999999940395355,
-                "validateMs": 138.60000002384186,
-                "totalMs": 451.5
+                "parseMs": 190.40000000596046,
+                "matchMs": 117,
+                "renderMs": 3.2000000178813934,
+                "validateMs": 134.39999997615814,
+                "totalMs": 445
               }
             },
             "redline-validation": {
-              "ms": 207.60000002384186,
+              "ms": 214.59999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 243,
+              "ms": 251.80000001192093,
               "detail": null
             },
             "redline-mode": {
-              "ms": 112.90000000596046,
+              "ms": 112.5,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1079.0983750000014,
+          "readyMs": 1067.1750829999946,
           "stages": {
             "redline-prepare": {
-              "ms": 113.09999999403954,
+              "ms": 103.10000002384186,
               "detail": null
             },
             "redline-worker": {
-              "ms": 452.2000000178814,
+              "ms": 465,
               "detail": {
-                "parseMs": 188.19999998807907,
-                "matchMs": 109.90000000596046,
-                "renderMs": 3.800000011920929,
-                "validateMs": 133.90000000596046,
-                "totalMs": 435.80000001192093
+                "parseMs": 190,
+                "matchMs": 117.2000000178814,
+                "renderMs": 3.199999988079071,
+                "validateMs": 134.30000001192093,
+                "totalMs": 444.7000000178814
               }
             },
             "redline-validation": {
-              "ms": 210.90000000596046,
+              "ms": 215.89999997615814,
               "detail": null
             },
             "redline-layout": {
-              "ms": 231.69999998807907,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 120.69999998807907,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1084.8902499999967,
-          "stages": {
-            "redline-prepare": {
-              "ms": 106.7999999821186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 453,
-              "detail": {
-                "parseMs": 190.69999998807907,
-                "matchMs": 111.7000000178814,
-                "renderMs": 4,
-                "validateMs": 135.5,
-                "totalMs": 441.90000000596046
-              }
-            },
-            "redline-validation": {
-              "ms": 213.10000002384186,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 239.5,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 126.59999999403954,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1069.3758329999982,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.5,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 451.30000001192093,
-              "detail": {
-                "parseMs": 188.2999999821186,
-                "matchMs": 113.5,
-                "renderMs": 3.5,
-                "validateMs": 133.80000001192093,
-                "totalMs": 439.09999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 208.30000001192093,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 234.69999998807907,
+              "ms": 210.60000002384186,
               "detail": null
             },
             "redline-mode": {
@@ -3249,218 +3375,156 @@
           }
         },
         {
-          "readyMs": 1058.718875000006,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.90000000596046,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 463.2999999821186,
-              "detail": {
-                "parseMs": 196,
-                "matchMs": 115.59999999403954,
-                "renderMs": 3.9000000059604645,
-                "validateMs": 135.7999999821186,
-                "totalMs": 451.2999999821186
-              }
-            },
-            "redline-validation": {
-              "ms": 210,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 209,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 102.59999999403954,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1114.3259160000016,
+          "readyMs": 1148.988750000004,
           "stages": {
             "redline-prepare": {
               "ms": 103,
               "detail": null
             },
             "redline-worker": {
-              "ms": 447.7999999821186,
+              "ms": 504.69999998807907,
               "detail": {
-                "parseMs": 187.59999999403954,
-                "matchMs": 111.09999999403954,
-                "renderMs": 4.100000023841858,
-                "validateMs": 133.39999997615814,
-                "totalMs": 436.19999998807907
+                "parseMs": 212.5,
+                "matchMs": 124.09999999403954,
+                "renderMs": 3.600000023841858,
+                "validateMs": 145.69999998807907,
+                "totalMs": 485.90000000596046
               }
             },
             "redline-validation": {
-              "ms": 203,
+              "ms": 222.09999999403954,
               "detail": null
             },
             "redline-layout": {
-              "ms": 252.30000001192093,
+              "ms": 242.2000000178814,
               "detail": null
             },
             "redline-mode": {
-              "ms": 110.10000002384186,
+              "ms": 109.2999999821186,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1058.0733749999927,
+          "readyMs": 1134.6604999999981,
           "stages": {
             "redline-prepare": {
-              "ms": 102.69999998807907,
+              "ms": 107.7999999821186,
               "detail": null
             },
             "redline-worker": {
-              "ms": 455.40000000596046,
+              "ms": 495.40000000596046,
               "detail": {
-                "parseMs": 190.2000000178814,
-                "matchMs": 113.59999999403954,
+                "parseMs": 200.19999998807907,
+                "matchMs": 127.30000001192093,
                 "renderMs": 3.5,
-                "validateMs": 135.40000000596046,
-                "totalMs": 442.7000000178814
+                "validateMs": 141.7999999821186,
+                "totalMs": 472.7999999821186
               }
             },
             "redline-validation": {
-              "ms": 216.19999998807907,
+              "ms": 233.7000000178814,
               "detail": null
             },
             "redline-layout": {
-              "ms": 208.59999999403954,
+              "ms": 217.7999999821186,
               "detail": null
             },
             "redline-mode": {
-              "ms": 103.2000000178814,
+              "ms": 107.69999998807907,
               "detail": null
             }
           }
         },
         {
-          "readyMs": 1052.6763749999955,
+          "readyMs": 1095.0042919999978,
           "stages": {
             "redline-prepare": {
-              "ms": 103.5,
+              "ms": 107.5,
               "detail": null
             },
             "redline-worker": {
-              "ms": 454.5,
+              "ms": 493.5,
+              "detail": {
+                "parseMs": 202.2000000178814,
+                "matchMs": 129.19999998807907,
+                "renderMs": 4.199999988079071,
+                "validateMs": 138.10000002384186,
+                "totalMs": 473.7000000178814
+              }
+            },
+            "redline-validation": {
+              "ms": 211.89999997615814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 209.69999998807907,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 103.7000000178814,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1088.1367920000048,
+          "stages": {
+            "redline-prepare": {
+              "ms": 102.2999999821186,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 470.7000000178814,
+              "detail": {
+                "parseMs": 192,
+                "matchMs": 119.2000000178814,
+                "renderMs": 3.399999976158142,
+                "validateMs": 133.10000002384186,
+                "totalMs": 447.7000000178814
+              }
+            },
+            "redline-validation": {
+              "ms": 216.39999997615814,
+              "detail": null
+            },
+            "redline-layout": {
+              "ms": 222.09999999403954,
+              "detail": null
+            },
+            "redline-mode": {
+              "ms": 104.5,
+              "detail": null
+            }
+          }
+        },
+        {
+          "readyMs": 1081.9240419999987,
+          "stages": {
+            "redline-prepare": {
+              "ms": 104,
+              "detail": null
+            },
+            "redline-worker": {
+              "ms": 465,
               "detail": {
                 "parseMs": 190.90000000596046,
-                "matchMs": 114,
-                "renderMs": 3.5,
-                "validateMs": 133.7000000178814,
-                "totalMs": 442.10000002384186
-              }
-            },
-            "redline-validation": {
-              "ms": 199.2999999821186,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 226,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 102.40000000596046,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1058.8630419999972,
-          "stages": {
-            "redline-prepare": {
-              "ms": 100.40000000596046,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 457.30000001192093,
-              "detail": {
-                "parseMs": 191.09999999403954,
-                "matchMs": 113.80000001192093,
-                "renderMs": 3.699999988079071,
+                "matchMs": 117,
+                "renderMs": 3.2999999821186066,
                 "validateMs": 135.2000000178814,
-                "totalMs": 443.80000001192093
+                "totalMs": 446.40000000596046
               }
             },
             "redline-validation": {
-              "ms": 210,
+              "ms": 221.2999999821186,
               "detail": null
             },
             "redline-layout": {
-              "ms": 213.69999998807907,
+              "ms": 217.60000002384186,
               "detail": null
             },
             "redline-mode": {
-              "ms": 107.30000001192093,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1059.0601670000033,
-          "stages": {
-            "redline-prepare": {
-              "ms": 103.19999998807907,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 453.7000000178814,
-              "detail": {
-                "parseMs": 190,
-                "matchMs": 113.7000000178814,
-                "renderMs": 3.699999988079071,
-                "validateMs": 133.90000000596046,
-                "totalMs": 441.30000001192093
-              }
-            },
-            "redline-validation": {
-              "ms": 203,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 224.5,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 103.5,
-              "detail": null
-            }
-          }
-        },
-        {
-          "readyMs": 1057.2919589999947,
-          "stages": {
-            "redline-prepare": {
-              "ms": 102.10000002384186,
-              "detail": null
-            },
-            "redline-worker": {
-              "ms": 463.69999998807907,
-              "detail": {
-                "parseMs": 195,
-                "matchMs": 115.7999999821186,
-                "renderMs": 3.600000023841858,
-                "validateMs": 133.19999998807907,
-                "totalMs": 447.59999999403954
-              }
-            },
-            "redline-validation": {
-              "ms": 205.30000001192093,
-              "detail": null
-            },
-            "redline-layout": {
-              "ms": 210.09999999403954,
-              "detail": null
-            },
-            "redline-mode": {
-              "ms": 104.60000002384186,
+              "ms": 108,
               "detail": null
             }
           }
@@ -3469,18 +3533,19 @@
       "modes": [
         {
           "mode": "Original",
-          "readyMs": 229.2067079999979
+          "readyMs": 239.45266699999047
         },
         {
           "mode": "Final",
-          "readyMs": 208.16816699999617
+          "readyMs": 205.9227089999913
         }
       ],
       "wholeBodyRequests": [
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3488,7 +3553,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3496,7 +3562,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3504,7 +3571,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3512,7 +3580,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3520,7 +3589,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3528,7 +3598,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3536,7 +3607,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3544,7 +3616,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3552,7 +3625,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3560,7 +3634,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3568,7 +3643,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3576,7 +3652,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3584,7 +3661,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3592,7 +3670,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3600,7 +3679,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3608,7 +3688,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3616,7 +3697,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3624,7 +3706,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3632,7 +3715,8 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
@@ -3640,18 +3724,19 @@
         {
           "keys": [
             "after",
-            "before"
+            "before",
+            "kind"
           ],
           "before": 991562,
           "after": 989910
         }
       ],
       "coverage": {
-        "edited": 122,
+        "edited": 121,
         "unchanged": 5880,
         "markedEdited": 120
       },
-      "p95": 1116.369458000001,
+      "p95": 1138.2755000000034,
       "targetMs": 2000,
       "targetPassed": true
     }
@@ -3666,10 +3751,10 @@
         "jsEventListeners": 36
       },
       "heap": {
-        "usedSize": 1761632,
+        "usedSize": 1807716,
         "totalSize": 3211264,
-        "embedderHeapUsedSize": 492968,
-        "backingStorageSize": 25664
+        "embedderHeapUsedSize": 493888,
+        "backingStorageSize": 31531
       }
     },
     {
@@ -3681,10 +3766,10 @@
         "jsEventListeners": 36
       },
       "heap": {
-        "usedSize": 1803748,
-        "totalSize": 3211264,
-        "embedderHeapUsedSize": 497424,
-        "backingStorageSize": 25664
+        "usedSize": 1838856,
+        "totalSize": 2686976,
+        "embedderHeapUsedSize": 498392,
+        "backingStorageSize": 31531
       }
     },
     {
@@ -3696,10 +3781,10 @@
         "jsEventListeners": 36
       },
       "heap": {
-        "usedSize": 1804024,
-        "totalSize": 2949120,
-        "embedderHeapUsedSize": 513640,
-        "backingStorageSize": 25664
+        "usedSize": 1844808,
+        "totalSize": 2686976,
+        "embedderHeapUsedSize": 516480,
+        "backingStorageSize": 31531
       }
     },
     {
@@ -3711,10 +3796,10 @@
         "jsEventListeners": 49
       },
       "heap": {
-        "usedSize": 2749212,
+        "usedSize": 2790028,
         "totalSize": 3538944,
-        "embedderHeapUsedSize": 585984,
-        "backingStorageSize": 26054
+        "embedderHeapUsedSize": 589864,
+        "backingStorageSize": 31921
       }
     },
     {
@@ -3726,10 +3811,10 @@
         "jsEventListeners": 49
       },
       "heap": {
-        "usedSize": 2793040,
+        "usedSize": 2833856,
         "totalSize": 3538944,
-        "embedderHeapUsedSize": 591288,
-        "backingStorageSize": 26054
+        "embedderHeapUsedSize": 578784,
+        "backingStorageSize": 31921
       }
     },
     {
@@ -3741,10 +3826,10 @@
         "jsEventListeners": 49
       },
       "heap": {
-        "usedSize": 2801692,
+        "usedSize": 2842508,
         "totalSize": 3538944,
-        "embedderHeapUsedSize": 598568,
-        "backingStorageSize": 26054
+        "embedderHeapUsedSize": 921800,
+        "backingStorageSize": 31921
       }
     },
     {
@@ -3752,14 +3837,14 @@
       "refreshes": 5,
       "dom": {
         "documents": 2,
-        "nodes": 118760,
+        "nodes": 118520,
         "jsEventListeners": 156
       },
       "heap": {
-        "usedSize": 2315640,
-        "totalSize": 3473408,
-        "embedderHeapUsedSize": 53590688,
-        "backingStorageSize": 1031263
+        "usedSize": 2385476,
+        "totalSize": 3211264,
+        "embedderHeapUsedSize": 53557144,
+        "backingStorageSize": 46416
       }
     },
     {
@@ -3767,14 +3852,14 @@
       "refreshes": 10,
       "dom": {
         "documents": 2,
-        "nodes": 118760,
+        "nodes": 118520,
         "jsEventListeners": 156
       },
       "heap": {
-        "usedSize": 2387176,
-        "totalSize": 3211264,
-        "embedderHeapUsedSize": 53629136,
-        "backingStorageSize": 1031263
+        "usedSize": 2412628,
+        "totalSize": 3473408,
+        "embedderHeapUsedSize": 53559856,
+        "backingStorageSize": 46416
       }
     },
     {
@@ -3782,119 +3867,119 @@
       "refreshes": 20,
       "dom": {
         "documents": 2,
-        "nodes": 118760,
+        "nodes": 118520,
         "jsEventListeners": 156
       },
       "heap": {
-        "usedSize": 2387844,
-        "totalSize": 2949120,
-        "embedderHeapUsedSize": 53766928,
-        "backingStorageSize": 1031263
-      }
-    },
-    {
-      "name": "aligned",
-      "switches": 30,
-      "dom": {
-        "documents": 2,
-        "nodes": 118774,
-        "jsEventListeners": 183
-      },
-      "heap": {
-        "usedSize": 3829356,
-        "totalSize": 4390912,
-        "embedderHeapUsedSize": 54054480,
-        "backingStorageSize": 1031667
-      }
-    },
-    {
-      "name": "aligned",
-      "switches": 60,
-      "dom": {
-        "documents": 2,
-        "nodes": 118774,
-        "jsEventListeners": 183
-      },
-      "heap": {
-        "usedSize": 3843172,
-        "totalSize": 4390912,
-        "embedderHeapUsedSize": 53707536,
-        "backingStorageSize": 1031667
-      }
-    },
-    {
-      "name": "aligned",
-      "switches": 90,
-      "dom": {
-        "documents": 2,
-        "nodes": 118774,
-        "jsEventListeners": 183
-      },
-      "heap": {
-        "usedSize": 3588676,
-        "totalSize": 4128768,
-        "embedderHeapUsedSize": 53650016,
-        "backingStorageSize": 1031667
-      }
-    },
-    {
-      "name": "wrapped",
-      "refreshes": 5,
-      "dom": {
-        "documents": 2,
-        "nodes": 118764,
-        "jsEventListeners": 156
-      },
-      "heap": {
-        "usedSize": 2333652,
-        "totalSize": 3473408,
-        "embedderHeapUsedSize": 53819800,
-        "backingStorageSize": 1031283
-      }
-    },
-    {
-      "name": "wrapped",
-      "refreshes": 10,
-      "dom": {
-        "documents": 2,
-        "nodes": 118764,
-        "jsEventListeners": 156
-      },
-      "heap": {
-        "usedSize": 2390812,
-        "totalSize": 3473408,
-        "embedderHeapUsedSize": 53683040,
-        "backingStorageSize": 1031283
-      }
-    },
-    {
-      "name": "wrapped",
-      "refreshes": 20,
-      "dom": {
-        "documents": 2,
-        "nodes": 118764,
-        "jsEventListeners": 156
-      },
-      "heap": {
-        "usedSize": 2387656,
+        "usedSize": 2451404,
         "totalSize": 3211264,
-        "embedderHeapUsedSize": 53726176,
-        "backingStorageSize": 1031283
+        "embedderHeapUsedSize": 53648208,
+        "backingStorageSize": 46416
       }
     },
     {
-      "name": "wrapped",
+      "name": "aligned",
       "switches": 30,
       "dom": {
         "documents": 2,
-        "nodes": 118778,
+        "nodes": 118534,
         "jsEventListeners": 183
       },
       "heap": {
-        "usedSize": 3829228,
+        "usedSize": 3895080,
         "totalSize": 4653056,
-        "embedderHeapUsedSize": 53769040,
-        "backingStorageSize": 1031687
+        "embedderHeapUsedSize": 53786448,
+        "backingStorageSize": 46820
+      }
+    },
+    {
+      "name": "aligned",
+      "switches": 60,
+      "dom": {
+        "documents": 2,
+        "nodes": 118534,
+        "jsEventListeners": 183
+      },
+      "heap": {
+        "usedSize": 3916092,
+        "totalSize": 4653056,
+        "embedderHeapUsedSize": 53510632,
+        "backingStorageSize": 46820
+      }
+    },
+    {
+      "name": "aligned",
+      "switches": 90,
+      "dom": {
+        "documents": 2,
+        "nodes": 118534,
+        "jsEventListeners": 183
+      },
+      "heap": {
+        "usedSize": 3948916,
+        "totalSize": 4653056,
+        "embedderHeapUsedSize": 53511520,
+        "backingStorageSize": 46820
+      }
+    },
+    {
+      "name": "wrapped",
+      "refreshes": 5,
+      "dom": {
+        "documents": 2,
+        "nodes": 118524,
+        "jsEventListeners": 156
+      },
+      "heap": {
+        "usedSize": 2389272,
+        "totalSize": 2949120,
+        "embedderHeapUsedSize": 53502008,
+        "backingStorageSize": 46417
+      }
+    },
+    {
+      "name": "wrapped",
+      "refreshes": 10,
+      "dom": {
+        "documents": 2,
+        "nodes": 118524,
+        "jsEventListeners": 156
+      },
+      "heap": {
+        "usedSize": 2448852,
+        "totalSize": 3473408,
+        "embedderHeapUsedSize": 53582048,
+        "backingStorageSize": 46417
+      }
+    },
+    {
+      "name": "wrapped",
+      "refreshes": 20,
+      "dom": {
+        "documents": 2,
+        "nodes": 118524,
+        "jsEventListeners": 156
+      },
+      "heap": {
+        "usedSize": 2445924,
+        "totalSize": 3211264,
+        "embedderHeapUsedSize": 53620056,
+        "backingStorageSize": 46417
+      }
+    },
+    {
+      "name": "wrapped",
+      "switches": 30,
+      "dom": {
+        "documents": 2,
+        "nodes": 118538,
+        "jsEventListeners": 183
+      },
+      "heap": {
+        "usedSize": 3888596,
+        "totalSize": 4390912,
+        "embedderHeapUsedSize": 53855816,
+        "backingStorageSize": 46821
       }
     },
     {
@@ -3902,14 +3987,14 @@
       "switches": 60,
       "dom": {
         "documents": 2,
-        "nodes": 118778,
+        "nodes": 118538,
         "jsEventListeners": 183
       },
       "heap": {
-        "usedSize": 3842996,
-        "totalSize": 4653056,
-        "embedderHeapUsedSize": 53754288,
-        "backingStorageSize": 1031687
+        "usedSize": 3909552,
+        "totalSize": 4390912,
+        "embedderHeapUsedSize": 53478864,
+        "backingStorageSize": 46821
       }
     },
     {
@@ -3917,14 +4002,14 @@
       "switches": 90,
       "dom": {
         "documents": 2,
-        "nodes": 118778,
+        "nodes": 118538,
         "jsEventListeners": 183
       },
       "heap": {
-        "usedSize": 3588448,
-        "totalSize": 4128768,
-        "embedderHeapUsedSize": 53626736,
-        "backingStorageSize": 1031687
+        "usedSize": 3951448,
+        "totalSize": 4390912,
+        "embedderHeapUsedSize": 53141960,
+        "backingStorageSize": 46821
       }
     },
     {
@@ -3932,14 +4017,14 @@
       "refreshes": 5,
       "dom": {
         "documents": 2,
-        "nodes": 118706,
+        "nodes": 118524,
         "jsEventListeners": 156
       },
       "heap": {
-        "usedSize": 2341328,
+        "usedSize": 2394824,
         "totalSize": 3473408,
-        "embedderHeapUsedSize": 53724056,
-        "backingStorageSize": 1031293
+        "embedderHeapUsedSize": 53494056,
+        "backingStorageSize": 46421
       }
     },
     {
@@ -3947,14 +4032,14 @@
       "refreshes": 10,
       "dom": {
         "documents": 2,
-        "nodes": 118706,
+        "nodes": 118524,
         "jsEventListeners": 156
       },
       "heap": {
-        "usedSize": 2389108,
-        "totalSize": 3473408,
-        "embedderHeapUsedSize": 53549672,
-        "backingStorageSize": 1031293
+        "usedSize": 2442308,
+        "totalSize": 3211264,
+        "embedderHeapUsedSize": 53591328,
+        "backingStorageSize": 46421
       }
     },
     {
@@ -3962,14 +4047,14 @@
       "refreshes": 20,
       "dom": {
         "documents": 2,
-        "nodes": 118706,
+        "nodes": 118524,
         "jsEventListeners": 156
       },
       "heap": {
-        "usedSize": 2390080,
-        "totalSize": 3211264,
-        "embedderHeapUsedSize": 53722464,
-        "backingStorageSize": 1031293
+        "usedSize": 2450368,
+        "totalSize": 2949120,
+        "embedderHeapUsedSize": 53671992,
+        "backingStorageSize": 46421
       }
     },
     {
@@ -3977,14 +4062,14 @@
       "switches": 30,
       "dom": {
         "documents": 2,
-        "nodes": 118720,
+        "nodes": 118538,
         "jsEventListeners": 183
       },
       "heap": {
-        "usedSize": 3831808,
+        "usedSize": 3893604,
         "totalSize": 4390912,
-        "embedderHeapUsedSize": 53972800,
-        "backingStorageSize": 1031697
+        "embedderHeapUsedSize": 53450528,
+        "backingStorageSize": 46825
       }
     },
     {
@@ -3992,14 +4077,14 @@
       "switches": 60,
       "dom": {
         "documents": 2,
-        "nodes": 118720,
+        "nodes": 118538,
         "jsEventListeners": 183
       },
       "heap": {
-        "usedSize": 3855832,
-        "totalSize": 4390912,
-        "embedderHeapUsedSize": 53194400,
-        "backingStorageSize": 1031697
+        "usedSize": 3917592,
+        "totalSize": 4653056,
+        "embedderHeapUsedSize": 53586448,
+        "backingStorageSize": 46825
       }
     },
     {
@@ -4007,14 +4092,14 @@
       "switches": 90,
       "dom": {
         "documents": 2,
-        "nodes": 118720,
+        "nodes": 118538,
         "jsEventListeners": 183
       },
       "heap": {
-        "usedSize": 3593648,
-        "totalSize": 4390912,
-        "embedderHeapUsedSize": 53642008,
-        "backingStorageSize": 1031697
+        "usedSize": 3947560,
+        "totalSize": 4653056,
+        "embedderHeapUsedSize": 53550784,
+        "backingStorageSize": 46825
       }
     }
   ],
@@ -4026,10 +4111,10 @@
         "jsEventListeners": 36
       },
       "heap": {
-        "usedSize": 1889452,
+        "usedSize": 1921456,
         "totalSize": 2686976,
-        "embedderHeapUsedSize": 747480,
-        "backingStorageSize": 25567
+        "embedderHeapUsedSize": 743440,
+        "backingStorageSize": 31337
       }
     },
     {
@@ -4039,10 +4124,10 @@
         "jsEventListeners": 36
       },
       "heap": {
-        "usedSize": 1889452,
+        "usedSize": 1921456,
         "totalSize": 2686976,
-        "embedderHeapUsedSize": 746928,
-        "backingStorageSize": 25567
+        "embedderHeapUsedSize": 745056,
+        "backingStorageSize": 31337
       }
     },
     {
@@ -4052,10 +4137,10 @@
         "jsEventListeners": 36
       },
       "heap": {
-        "usedSize": 1889452,
+        "usedSize": 1921456,
         "totalSize": 2686976,
-        "embedderHeapUsedSize": 747480,
-        "backingStorageSize": 25567
+        "embedderHeapUsedSize": 745056,
+        "backingStorageSize": 31337
       }
     }
   ]

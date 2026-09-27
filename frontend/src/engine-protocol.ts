@@ -16,7 +16,7 @@ export type EngineResponse =
   | {
       outcome: "success";
       html: string;
-      modelVersion: 1;
+      modelVersion: 1 | 2;
       diagnostics: readonly Diagnostic[];
       timings: Timings;
     }

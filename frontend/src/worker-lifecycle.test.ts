@@ -49,9 +49,9 @@ it("terminates a Markdown preparation worker on timeout and cancellation", async
       postMessage() {}
     },
   );
-  await expect(prepareMarkdown("# title", { timeoutMs: 5 })).rejects.toBeInstanceOf(
-    DiffTimeoutError,
-  );
+  await expect(
+    prepareMarkdown("# title", { timeoutMs: 5 }),
+  ).rejects.toBeInstanceOf(DiffTimeoutError);
   expect(instances[0].terminate).toHaveBeenCalledOnce();
 
   const controller = new AbortController();
@@ -106,3 +106,28 @@ it("declines either browser projection mismatch, including empty elements and wh
     ).rejects.toThrow("Unsupported browser projection");
   }
 });
+
+for (const modelVersion of [1, 2, 0, 3, undefined])
+  it(`worker model version ${modelVersion} is ${modelVersion === 1 || modelVersion === 2 ? "accepted" : "rejected"}`, async () => {
+    const terminate = vi.fn();
+    vi.stubGlobal(
+      "Worker",
+      class extends EventTarget {
+        terminate = terminate;
+        postMessage() {
+          queueMicrotask(() =>
+            this.dispatchEvent(
+              new MessageEvent("message", {
+                data: { ...success, modelVersion },
+              }),
+            ),
+          );
+        }
+      },
+    );
+    const pending = runEngine("a", "b");
+    if (modelVersion === 1 || modelVersion === 2)
+      await expect(pending).resolves.toMatchObject({ modelVersion });
+    else await expect(pending).rejects.toBeInstanceOf(DiffEngineError);
+    expect(terminate).toHaveBeenCalledOnce();
+  });

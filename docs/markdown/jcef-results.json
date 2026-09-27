@@ -1,6 +1,6 @@
 {
-  "runtime": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
-  "url": "http://redline.localhost/index.html?session=3ecff9fb-4393-4636-adb2-94b45fe26436&theme=dark&format=markdown",
+  "runtime": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+  "url": "http://redline.localhost/index.html?session=26c0ec01-c68a-466e-a68b-74691d4366cb&theme=dark&format=markdown",
   "checks": [
     "Markdown Compare Files selects Redline and loads the packaged conversion/comparison workers",
     "Metadata and table cells have inline changes; whole-block notice applies only to code",

@@ -56,8 +56,9 @@ describe("mock corpus", () => {
   it("collection guide: the attribute-only callout change is fully represented", async () => {
     const { before, after } = pair("collection-guide");
     const result = await buildRedline(before, after);
-    // The callout's class change (info -> warning) is invisible in the merged body; the marked
-    // text edits must not silence the incomplete-highlights signal.
+    const merged = new DOMParser().parseFromString(result.html, "text/html");
+    expect(merged.querySelector(".callout[data-diff-attrs]")).not.toBeNull();
+    expect(result.reducedPrecision).toBe(false);
     expect(result.markerCount).toBeGreaterThan(0);
     expect(result.bodyUnderReported).toBe(false);
   });

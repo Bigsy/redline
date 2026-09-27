@@ -18,6 +18,10 @@
     at a glance instead of a wall of rewrapped markup. Works anywhere the IDE shows a diff: local
     changes, commits, and VCS revisions.
     <br/><br/>
+    Review attribute changes with amber outlines and tooltips, and jump between changes using
+    the navigation controls and minimap. Switch between <b>Original</b>, <b>Redline</b>, and
+    <b>Final</b> while preserving each side's text, attributes, and list/table whitespace.
+    <br/><br/>
     Select the <b>Redline</b> viewer in the diff editor's view switcher, next to Side-by-side and
     Unified.
     ]]></description>

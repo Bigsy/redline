@@ -64,7 +64,7 @@ for (const [name, before, after, outcome, limit] of [
     if (limit) expect(result.limit).toBe(limit);
     if (outcome === "success") {
       expect(result.html.length).toBeLessThanOrEqual(2000000);
-      expect(result.modelVersion).toBe(1);
+      expect(result.modelVersion).toBe(2);
       expect(result.operations).toBeUndefined();
       expect(result.timings.totalMs).toBeGreaterThan(0);
     } else expect(result.html).toBeUndefined();

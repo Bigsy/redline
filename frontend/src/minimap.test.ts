@@ -25,6 +25,7 @@ const block = (top: number, bottom: number, kind: MarkerKind | "mixed") => ({
   elements: [],
   ranges: [],
   operations: [],
+  descriptions: [],
 });
 
 /**

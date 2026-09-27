@@ -1,14 +1,53 @@
 {
-  "path": "build/distributions/redline-0.3.0.zip",
-  "sha256": "064018735427d7b757440611a7c1bf98978a67c80218b88cbb344d3c41df9aa2",
+  "verifiedAt": "2026-09-27",
+  "path": "build/distributions/redline-0.3.1.zip",
+  "sha256": "d6fa57b50cc2e1e6619d21c6a32fa491f47004d09f8cd36c9c472e287b30dccf",
   "notices": [
     "third-party/diff-LICENSE",
     "third-party/entities-LICENSE",
+    "third-party/marked-LICENSE",
     "third-party/parse5-LICENSE",
     "third-party/redline-engine-LICENSE",
     "third-party/redline-engine-NOTICES.md"
   ],
   "assetsMatch": true,
-  "pluginVersion": "0.3.0",
-  "versionedChangeNotesMatch": true
+  "assets": {
+    "web/assets/diff.worker-CtFU3zMa.js": {
+      "bytes": 245125,
+      "sha256": "98c083edb1c12a593f701476c738e54ff61d2b478e7cfb8d4ab9e0e2c5eeb15a"
+    },
+    "web/assets/diff.worker-CtFU3zMa.js.map": {
+      "bytes": 735883,
+      "sha256": "a5f6ab191e162b694d8543330aebdc1e08413f36d2817d4cb7cb06605b18905f"
+    },
+    "web/assets/index-u_kj34VK.js": {
+      "bytes": 28312,
+      "sha256": "be10cfdbb8ec4129188802efa4c8b56488bce1fb197570bf10f902e5bf6613bc"
+    },
+    "web/assets/index-u_kj34VK.js.map": {
+      "bytes": 115322,
+      "sha256": "fae333bce64b37d50617721b5e41a41f302bb0aec353ce8fe7c7021013a69b0a"
+    },
+    "web/index.html": {
+      "bytes": 9588,
+      "sha256": "174cb87e76c35c42956f9758a8e5f3bbda489f7c4f2460c74df9d6ca21368257"
+    }
+  },
+  "pluginVersion": "0.3.1",
+  "versionedChangeNotesMatch": true,
+  "engine": {
+    "version": "0.2.0",
+    "modelVersion": 2,
+    "source": "npm registry",
+    "tarball": "https://registry.npmjs.org/redline-engine/-/redline-engine-0.2.0.tgz",
+    "sha256": "d91fafb25b06a50f8786210a69ef181869430ca5cd695c579b8ed76ac6cfd761",
+    "matchesPreparedCandidate": true,
+    "manifestPin": "0.2.0",
+    "lockfileUsesRegistry": true,
+    "cleanFrozenInstall": true,
+    "noticesMatchUpstream": true
+  },
+  "benchmarkRuntimeAssetsMatch": true,
+  "sandboxJarMatches": true,
+  "releasePublished": false
 }

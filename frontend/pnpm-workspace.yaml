@@ -4,4 +4,4 @@
 allowBuilds: {}
 # The integration explicitly pins this newly published, verified release.
 minimumReleaseAgeExclude:
-  - redline-engine@0.1.0
+  - redline-engine@0.2.0

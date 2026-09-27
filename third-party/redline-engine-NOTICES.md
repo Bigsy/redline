@@ -1,5 +1,9 @@
 # Third-party notices
 
+This plugin bundles redline-engine 0.2.0 (MIT). The upstream notice below was verified
+against the published npm tarball. See `docs/engine-integration/package-audit.json`
+for package provenance.
+
 redline-engine is MIT licensed; see LICENSE.
 
 Runtime dependencies are installed separately by the package manager, not bundled into this

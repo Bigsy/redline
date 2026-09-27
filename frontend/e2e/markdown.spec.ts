@@ -147,10 +147,18 @@ status: published
 
   const changedRow = rows.nth(1);
   await expect(changedRow).not.toHaveAttribute("data-diff-node", /.+/);
-  await expect(changedRow.locator("td").nth(1).locator("del.redline")).toHaveText("pending");
-  await expect(changedRow.locator("td").nth(1).locator("ins.redline")).toHaveText("active");
-  await expect(changedRow.locator("td").nth(2).locator("del.redline")).toContainText("old");
-  await expect(changedRow.locator("td").nth(2).locator("ins.redline")).toContainText("new");
+  // Model 2 does not pair unrelated single-word cells; the changed row remains local,
+  // and the notes cell still receives an inline edit around its shared context.
+  await expect(changedRow.locator('td[data-diff-node="delete"]')).toHaveText("pending");
+  await expect(changedRow.locator('td[data-diff-node="insert"]')).toHaveText("active");
+  await expect(changedRow.locator("td").last().locator("del.redline")).toHaveText("old");
+  await expect(changedRow.locator("td").last().locator("ins.redline")).toHaveText("new");
+  await expect(frame.locator("tbody[data-diff-node]")).toHaveCount(0);
+  for (const [mode, cells] of [["Original", ["Beta", "pending", "old note"]],
+    ["Final", ["Beta", "active", "new note"]]] as const) {
+    await page.getByRole("button", { name: mode, exact: true }).click();
+    await expect(rows.nth(1).locator("td")).toHaveText([...cells]);
+  }
   expect(external).toEqual([]);
 });
 

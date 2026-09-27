@@ -9,7 +9,7 @@ import { reviewTargets, type ReviewTarget } from "./review-document";
  * and drive `contentWindow.scrollTo` (the frame's own scripts stay dead: no `allow-scripts`).
  */
 
-export type MarkerKind = "ins" | "del";
+export type MarkerKind = ReviewTarget["kind"];
 
 /** A redline marker's box in document coordinates (top-relative to the document, not viewport). */
 export interface MarkerRect {
@@ -20,6 +20,7 @@ export interface MarkerRect {
   el?: Element;
   range?: Range;
   operation?: string;
+  description?: string;
 }
 
 export interface ChangeBlock {
@@ -30,6 +31,7 @@ export interface ChangeBlock {
   elements: Element[];
   ranges: Range[];
   operations: string[];
+  descriptions: string[];
 }
 
 /** The viewer supplies a displayed merge or actual before/after DOM projection. */
@@ -66,6 +68,7 @@ export function clusterMarkers(
     elements: Element[];
     ranges: Range[];
     operations: string[];
+    descriptions: string[];
   }[] = [];
   for (const marker of visible) {
     const last = blocks[blocks.length - 1];
@@ -75,6 +78,7 @@ export function clusterMarkers(
       if (marker.el) last.elements.push(marker.el);
       if (marker.range) last.ranges.push(marker.range);
       if (marker.operation) last.operations.push(marker.operation);
+      if (marker.description) last.descriptions.push(marker.description);
     } else {
       blocks.push({
         top: marker.top,
@@ -83,18 +87,22 @@ export function clusterMarkers(
         elements: marker.el ? [marker.el] : [],
         ranges: marker.range ? [marker.range] : [],
         operations: marker.operation ? [marker.operation] : [],
+        descriptions: marker.description ? [marker.description] : [],
       });
     }
   }
 
-  return blocks.map(({ top, bottom, kinds, elements, ranges, operations }) => ({
-    top,
-    bottom,
-    kind: kinds.size > 1 ? "mixed" : [...kinds][0],
-    elements,
-    ranges,
-    operations,
-  }));
+  return blocks.map(
+    ({ top, bottom, kinds, elements, ranges, operations, descriptions }) => ({
+      top,
+      bottom,
+      kind: kinds.size > 1 ? "mixed" : [...kinds][0],
+      elements,
+      ranges,
+      operations,
+      descriptions,
+    }),
+  );
 }
 
 /** Measure the active projection's retained elements and text ranges. */
@@ -113,6 +121,7 @@ function measureMarkers(
       el,
       range: el ? undefined : (target.node as Range),
       operation: target.operation,
+      description: target.description,
     };
   });
 }
@@ -237,7 +246,7 @@ export function installMinimap(
     const shown =
       targets || survivor === null
         ? markers
-        : markers.filter((m) => m.kind === survivor);
+        : markers.filter((m) => m.kind === survivor || m.kind === "attrs");
     // Nothing of the surviving side to show is not a failure: an insertion-only diff genuinely
     // has nothing marked in Original.
     return shown.length === 0 || shown.some((m) => m.height > 0);
@@ -296,7 +305,10 @@ export function installMinimap(
         tick.className = `redline-tick ${block.kind}${index === current ? " current" : ""}`;
         tick.style.top = `${(block.top / docHeight) * 100}%`;
         tick.style.height = `${Math.max(((block.bottom - block.top) / docHeight) * 100, 0.5)}%`;
-        tick.title = `Change ${index + 1} of ${blocks.length}`;
+        tick.title = [
+          `Change ${index + 1} of ${blocks.length}`,
+          ...new Set(block.descriptions),
+        ].join("\n");
         tick.addEventListener("click", () => goTo(index));
         return tick;
       }),

@@ -13,12 +13,13 @@ import {
   elements,
 } from "./review-document";
 const REDLINE_CSS = `
-  [data-diff-op][data-diff-node], [data-diff-op][data-diff-unwrap] {
+  [data-diff-op][data-diff-node], [data-diff-op][data-diff-unwrap], [data-diff-op][data-diff-attrs] {
     visibility: visible !important; opacity: 1 !important; content-visibility: visible !important;
   }
   [data-diff-node="insert"] { background: #d3f2d3 !important; color: #1a1a1a !important; text-decoration: none !important; outline: 1px solid #7ac47a !important; }
   [data-diff-node="delete"] { background: #f8d7d7 !important; color: #1a1a1a !important; text-decoration: line-through !important; outline: 1px solid #d98c8c !important; }
   [data-diff-unwrap] { outline: 1px dashed #b58a25 !important; }
+  [data-diff-op][data-diff-attrs] { outline: 2px dashed #b58a25 !important; }
   [data-redline-current] { box-shadow: 0 0 0 2px #3574f0 !important; }
   ::highlight(redline-current) { background: #a8c7ff; }
 `;
@@ -110,7 +111,10 @@ function runInWorker(beforeBody: string, afterBody: string): EngineRun {
       "message",
       (event: MessageEvent<EngineResponse>) => {
         const response = event.data;
-        if (response.outcome === "success" && response.modelVersion === 1)
+        if (
+          response.outcome === "success" &&
+          (response.modelVersion === 1 || response.modelVersion === 2)
+        )
           resolve(response);
         else reject(new DiffEngineError(response));
       },

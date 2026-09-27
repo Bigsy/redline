@@ -547,6 +547,12 @@ async function render(): Promise<HTMLIFrameElement> {
           mode === "redline"
             ? reviewTargets(body)
             : projectBody(body, mode === "original" ? "before" : "after");
+        // UI-only titles are applied to the displayed merge, never to the immutable merge
+        // or the exact before/after bodies. Attribute values remain plain text.
+        if (mode === "redline")
+          for (const target of targets)
+            if (target.description && "tagName" in target.node)
+              target.node.setAttribute("title", target.description);
         doc.documentElement.dataset.redlineMode = mode;
         findBar?.attach(frame);
         restoreScroll(frame, top);

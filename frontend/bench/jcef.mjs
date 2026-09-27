@@ -2,8 +2,12 @@
 // Start sandbox with -Dide.browser.jcef.debug.port=9223 and the testdata/jcef pair.
 import { readFileSync, writeFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { model2Pairs } from "../src/model-2-fixtures.ts";
 const targets = await (await fetch("http://127.0.0.1:9223/json/list")).json();
-const target = targets.find((p) => p.url.includes("redline.localhost"));
+const target = targets.find(
+  (p) =>
+    p.url.includes("redline.localhost") && !p.url.includes("format=markdown"),
+);
 assert(target, "Packaged Redline page must be open");
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((resolve, reject) => {
@@ -124,6 +128,66 @@ report.checks.push({
   name: "swapped resource payloads in packaged shell",
   nativeToolbarDispatch: false,
 });
+// Exercise model 2 through the actual bundled worker, projector and navigation in JCEF.
+for (const fixture of model2Pairs) {
+  await mode("Redline");
+  await evaluate(
+    `window.__payloads=${JSON.stringify(fixture)};window.__redlineReload()`,
+  );
+  await waitFor(`document.querySelector('.redline-nav')`);
+  const precision =
+    await evaluate(`(()=>{const doc=document.querySelector('iframe').contentDocument;return {
+    leads:doc.querySelectorAll('[data-diff-lead]').length,
+    attrs:doc.querySelectorAll('[data-diff-attrs]').length,
+    coarse:doc.querySelectorAll('ul[data-diff-node],tbody[data-diff-node]').length,
+    banners:[...document.querySelectorAll('.redline-banner')].map(e=>e.textContent),
+    titles:[...document.querySelectorAll('.redline-tick')].map(e=>e.title)
+  }})()`);
+  assert.equal(precision.leads, fixture.leads);
+  assert.equal(precision.attrs, fixture.attrs);
+  assert.equal(precision.coarse, 0);
+  assert.deepEqual(precision.banners, []);
+  if (fixture.attrs)
+    assert(
+      precision.titles.some((title) => title.includes('class: "old" → "new"')),
+    );
+  for (const [view, source] of [
+    ["Original", fixture.before],
+    ["Final", fixture.after],
+  ]) {
+    await mode(view);
+    assert(
+      await evaluate(`(()=>{
+      const actual=document.querySelector('iframe').contentDocument.body.cloneNode(true);
+      actual.querySelectorAll('[data-redline-current]').forEach(e=>e.removeAttribute('data-redline-current'));
+      actual.normalize();
+      const expected=new DOMParser().parseFromString(${JSON.stringify(source)},'text/html').body;
+      expected.normalize();return actual.isEqualNode(expected)
+    })()`),
+      fixture.name + " " + view + " exact body",
+    );
+    if (fixture.attrs) {
+      await evaluate(`window.__redlineNav('next')`);
+      assert.match(
+        await evaluate(
+          `document.querySelector('.redline-nav-count').textContent`,
+        ),
+        /^[1-9]/,
+      );
+      assert(
+        await evaluate(
+          `[...document.querySelectorAll('.redline-tick')].some(e=>e.title.includes('Attributes changed:'))`,
+        ),
+      );
+    }
+  }
+  report.checks.push({
+    name: fixture.name,
+    exactProjections: true,
+    ...precision,
+  });
+}
+await mode("Redline");
 await evaluate(
   `window.__payloads=null;window.fetch=window.__nativeFetch;window.__NativeWorker=Worker;window.Worker=class extends window.__NativeWorker{postMessage(data){this.timer=setTimeout(()=>super.postMessage(data),5000)}terminate(){clearTimeout(this.timer);window.__terminated=true;super.terminate()}};window.__redlineReload()`,
 );

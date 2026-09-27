@@ -8,13 +8,13 @@
       "markers": 5,
       "worker": [
         {
-          "duration": 24.200000017881393,
+          "duration": 51.5,
           "timings": {
-            "parseMs": 2,
-            "matchMs": 8.699999988079071,
-            "renderMs": 0,
-            "validateMs": 1.5,
-            "totalMs": 12.199999988079071
+            "parseMs": 2.0999999940395355,
+            "matchMs": 8.099999994039536,
+            "renderMs": 0.09999999403953552,
+            "validateMs": 0.800000011920929,
+            "totalMs": 11.099999994039536
           }
         }
       ]
@@ -42,6 +42,50 @@
     {
       "name": "swapped resource payloads in packaged shell",
       "nativeToolbarDispatch": false
+    },
+    {
+      "name": "pretty-printed list insertion and deletion",
+      "exactProjections": true,
+      "leads": 2,
+      "attrs": 0,
+      "coarse": 0,
+      "banners": [],
+      "titles": [
+        "Change 1 of 1"
+      ]
+    },
+    {
+      "name": "pretty-printed table row and cell edits",
+      "exactProjections": true,
+      "leads": 1,
+      "attrs": 0,
+      "coarse": 0,
+      "banners": [],
+      "titles": [
+        "Change 1 of 1"
+      ]
+    },
+    {
+      "name": "attribute-only wrapper with escaped values",
+      "exactProjections": true,
+      "leads": 0,
+      "attrs": 1,
+      "coarse": 0,
+      "banners": [],
+      "titles": [
+        "Change 1 of 1\nAttributes changed:\nclass: \"old\" → \"new\"\ntitle: \"old title\" → \"new \\\"title\\\"\"\ndata-note: \"<img src=x onerror=bad()>\" → (absent)\nid: (absent) → \"added\""
+      ]
+    },
+    {
+      "name": "attributes and text in a table cell",
+      "exactProjections": true,
+      "leads": 0,
+      "attrs": 1,
+      "coarse": 0,
+      "banners": [],
+      "titles": [
+        "Change 1 of 1\nAttributes changed:\nclass: \"old\" → \"new\"\ndata-note: \"a & b\" → (absent)"
+      ]
     },
     {
       "name": "packaged cancellation and safe fallback",

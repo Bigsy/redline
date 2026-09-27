@@ -1,6 +1,63 @@
-# Published-engine integration verification
+# Engine integration verification
 
-The plugin pins `redline-engine@0.1.0` from npm and bundles it in the module worker. No sibling
+## Phase 4 — 2026-09-27
+
+The plugin pins `redline-engine@0.2.0` exactly from npm and bundles it in the comparison
+worker. The release appeared on npm during verification. Its downloaded tarball is
+byte-for-byte identical to the initially tested prepared candidate (SHA-256
+`d91fafb25b06a50f8786210a69ef181869430ca5cd695c579b8ed76ac6cfd761`). The final
+manifest and lockfile use the registry; no local file dependency remains.
+
+The projector captures lead ownership before changing sibling relationships, removes only an
+absent element's owned whitespace, and restores the entire before attribute list. It retains
+model-1 node/wrapper/unwrap behavior and supports custom prefixes. Attribute edits now have
+amber outlines, navigation targets on both sides, and minimap tooltips. Tooltip values are
+plain text; display titles are applied only to the displayed Redline clone so source titles
+and exact attributes survive Original and Final. Unknown operation models remain rejected.
+
+All eleven conformance vectors run directly from the installed engine package in unit tests
+and in Chromium against the plugin projector. Focused fixtures cover pretty-printed lists
+and tables, attribute-only wrappers with escaped values, and attribute-plus-text cells.
+The original Markdown `tbody[data-diff-node]` unit expectation is unchanged. Unrelated
+single-word cells now use marked `td` elements; shared notes still receive inline changes.
+
+Reproduce with `pnpm install --frozen-lockfile`, `CI=true pnpm run typecheck`, `pnpm test`,
+`pnpm run build`, `pnpm run test:e2e` and `pnpm run benchmark` from `frontend`, followed by
+`./gradlew check buildPlugin` from the root. Launch the sandbox with
+`JAVA_TOOL_OPTIONS=-Dide.browser.jcef.debug.port=9223` and the HTML/Markdown demo pair,
+then run `node bench/jcef.mjs` and `node bench/markdown-jcef.mjs` respectively from
+`frontend`. Restart the sandbox after changing plugin resources.
+
+No new plugin release, version bump or tag was created for this integration.
+Timing ceilings are advisory; exact reconstruction, operation coverage, resource limits
+and worker lifecycle assertions remain mandatory.
+
+Final checks: fresh frozen registry install and TypeScript pass; 176 frontend unit tests,
+73 Chromium tests, and 36 Kotlin/platform tests pass; `./gradlew check buildPlugin` passes.
+Both `jcef.mjs` and `markdown-jcef.mjs` pass against the restarted final IDEA 2024.1/JCEF 122
+plugin. The HTML script additionally runs all four shared model-2 precision fixtures through
+the packaged worker and checks exact bodies, attribute tooltips and navigation.
+
+Small-corpus render-ready p95 is 93–101 ms. Large aligned/wrapped/start-insertion shapes
+are 1.13–1.19 s p95; every advisory target passed. Both projections and all 120 changed
+paragraphs pass the mandatory checks. Retained DOM/listener counts remain flat across
+refresh and 30/60/90-switch checkpoints. These are retained-heap observations, not RSS caps.
+The final registry build has byte-identical runtime JS to the benchmarked candidate; the
+[package audit](package-audit.json) verifies that the ZIP, generated web assets and sandbox
+JAR match and include all engine/parser/runtime notices.
+
+The commit/push follow-up incorporates the existing remote 0.3.1 release. The XML feature
+description and Unreleased changelog describe model 2; published 0.3.1 notes remain intact.
+The refreshed 0.3.1 ZIP audit matches the same runtime JS exercised by the checks above.
+
+No Phase 4 implementation or registry blocker remains. The existing manual release gates
+remain: native IntelliJ Swap Sides toolbar dispatch and actual Document/VFS edit notification.
+The computer-use runtime reports `CUA_REPL_ENABLED_SURFACES is required`; CDP checks exercise
+the navigation bridge and injected resource refresh/swap, not those native interactions.
+
+## Original 0.1.0 integration (historical)
+
+The original integration pinned `redline-engine@0.1.0` from npm and bundled it in the module worker. No sibling
 checkout, runtime download, selector, legacy retry, positional partition or synchronous fallback
 is used. No changes to the standalone engine were necessary.
 

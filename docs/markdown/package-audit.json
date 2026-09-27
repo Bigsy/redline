@@ -1,15 +1,17 @@
 {
   "assets": {
-    "web/assets/index-COy1VuN-.js": {
-      "bytes": 26917,
-      "sha256": "085b407445c233c22c152ad19a3b2cb3850fa4d32dfad51aff16ce2e79cd5de5"
+    "web/assets/diff.worker-CtFU3zMa.js": {
+      "bytes": 245125,
+      "sha256": "98c083edb1c12a593f701476c738e54ff61d2b478e7cfb8d4ab9e0e2c5eeb15a"
     },
-    "web/assets/diff.worker-CcEOOaTQ.js": {
-      "bytes": 234972,
-      "sha256": "6367b84e9ec5da03c716f42b46c7faab48de36443c5071bd03ba990c455afb1a"
+    "web/assets/index-u_kj34VK.js": {
+      "bytes": 28312,
+      "sha256": "be10cfdbb8ec4129188802efa4c8b56488bce1fb197570bf10f902e5bf6613bc"
     }
   },
   "markedLicensePackaged": true,
   "mainBundleContainsParserOrEngine": false,
-  "pluginVersion": "0.3.0 (unchanged)"
+  "engineVersion": "0.2.0",
+  "engineSource": "npm registry",
+  "pluginVersion": "0.3.1 (unchanged)"
 }

@@ -1,4 +1,6 @@
+import { model2Pairs } from "./model-2-fixtures";
 export const projectionPairs = [
+  ...model2Pairs.map(({ before, after }) => [before, after]),
   ["<p>hello world</p>", "<p>hello <b>world</b></p>"],
   ["<p><b>one two</b> three</p>", "<p>one <i>two three</i></p>"],
   ["<ul><li>a</li></ul>", "<ul><li>a</li><li>b<ul><li>c</li></ul></li></ul>"],

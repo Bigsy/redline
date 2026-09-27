@@ -34,8 +34,8 @@ describe("whole-block diagnostic classification", () => {
 
   it("does not disguise a separate structural fallback as a code-only replacement", async () => {
     const result = await buildRedline(
-      doc('<table><tbody><tr><td>A</td></tr>\n</tbody></table><pre><code>old</code></pre>'),
-      doc('<table><tbody><tr><td>B</td></tr>\n<tr><td>C</td></tr>\n</tbody></table><pre><code>new</code></pre>'),
+      doc('<table><tbody>\n  <tr><td>same cell</td></tr>\n</tbody></table><pre><code>const n = 1;</code></pre>'),
+      doc('<table><tbody>\n    <tr><td>same cell</td></tr>\n</tbody></table><pre><code>const n = 2;</code></pre>'),
     );
     expect(result.reducedPrecision).toBe(true);
     expect(result.wholeCodeBlocksOnly).toBe(false);
@@ -104,12 +104,13 @@ describe("truthfulness-relevant behaviour", () => {
     expect(markers(await diffHtml(same, same))).toHaveLength(0);
   });
 
-  it("marks attribute-only replacements", async () => {
-    // Documents the limitation the viewer's "changed but unrepresentable" state exists for:
-    // if this ever starts producing markers, the engine improved — revisit the banner logic.
+  it("marks attribute-only changes without duplicating the element", async () => {
     const before = doc('<p class="old">same text</p>');
     const after = doc('<p class="new">same text</p>');
-    expect(markers(await diffHtml(before, after)).length).toBeGreaterThan(0);
+    const result = await buildRedline(before, after);
+    expect(markers(result.html)).toHaveLength(1);
+    expect(markers(result.html)[0].hasAttribute("data-diff-attrs")).toBe(true);
+    expect(result.reducedPrecision).toBe(false);
   });
 
   it("produces NO markers for head-only changes (known engine limitation)", async () => {

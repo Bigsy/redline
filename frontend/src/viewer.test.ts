@@ -172,14 +172,9 @@ describe("viewer truthfulness states", () => {
       doc('<p class="new">same text</p>'),
     );
     await bootSession("s1");
-    expect(banners()).toEqual([
-      {
-        kind: "info",
-        text: "Some sections are shown as whole before/after blocks because finer inline comparison was unavailable.",
-      },
-    ]);
+    expect(banners()).toEqual([]);
     expect(
-      frame().contentDocument?.querySelector('[data-diff-node="insert"]'),
+      frame().contentDocument?.querySelector('[data-diff-attrs]'),
     ).not.toBeNull();
     expect(window.__redlineNav).toBeDefined();
   });
@@ -208,12 +203,7 @@ describe("viewer truthfulness states", () => {
       doc('<p class="new">new text</p>'),
     );
     await bootSession("s1");
-    expect(banners()).toEqual([
-      {
-        kind: "info",
-        text: "Some sections are shown as whole before/after blocks because finer inline comparison was unavailable.",
-      },
-    ]);
+    expect(banners()).toEqual([]);
     expect(
       frame().contentDocument?.querySelector('[data-diff-node="insert"]'),
     ).not.toBeNull();

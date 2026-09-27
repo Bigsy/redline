@@ -6,6 +6,22 @@ All notable changes to Redline are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Show attribute changes with amber outlines, navigation and minimap targets, and safely
+  rendered tooltips listing changed values, including changes with no text edits.
+
+### Changed
+
+- Upgrade the pinned HTML comparison engine to `redline-engine@0.2.0` and operation model 2
+  for more precise list, table, and attribute edits. Continue rejecting unknown model versions
+  and validating exact reconstruction of both sides before displaying a result.
+
+### Fixed
+
+- Preserve exact list/table whitespace and before-side attributes when switching between
+  Original and Final, including pretty-printed insertions and deletions.
+
 ## [0.3.1] — 2026-09-26
 
 ### Fixed

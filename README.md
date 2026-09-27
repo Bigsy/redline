@@ -96,7 +96,7 @@ sides of the request have the same supported format and JCEF is available (or on
 empty for an added/deleted file). The Kotlin side serves the viewer
 shell and both documents over a custom scheme handler; the shell (a Vite + TypeScript app
 in `frontend/`, bundled into `src/main/resources/web/` at build time) computes the merged
-redline with [redline-engine 0.1.0](https://www.npmjs.com/package/redline-engine) (MIT) and renders
+redline with [redline-engine 0.2.0](https://www.npmjs.com/package/redline-engine) (MIT) and renders
 it into a sandboxed iframe.
 
 Markdown revisions are first converted to HTML by the bundled

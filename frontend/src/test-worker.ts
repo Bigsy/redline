@@ -35,7 +35,7 @@ class TestWorker extends EventTarget {
               ? {
                   outcome: "success",
                   html: renderMerged(result.comparison).html,
-                  modelVersion: 1,
+                  modelVersion: result.comparison.modelVersion,
                   diagnostics: result.comparison.diagnostics,
                   timings: result.comparison.timings,
                 }

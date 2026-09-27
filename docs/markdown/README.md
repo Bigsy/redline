@@ -3,7 +3,7 @@
 The synthetic [before](../../testdata/markdown/before.md) and
 [after](../../testdata/markdown/after.md) demo covers metadata, prose, emphasis, links,
 blockquotes, tables, task lists, and fenced code. The feature uses pinned `marked@18.0.14`
-inside the existing worker bundle, followed by Redline's sanitizer and `redline-engine@0.1.0`.
+inside the existing worker bundle, followed by Redline's sanitizer and `redline-engine@0.2.0`.
 Neither sibling MilkJ nor the local engine checkout is a build dependency.
 
 ## Visual inspection
@@ -81,4 +81,13 @@ sandbox with `JAVA_TOOL_OPTIONS=-Dide.browser.jcef.debug.port=9223`, then run
 modes, navigation bridge, find, theme, and shell refresh; injected refresh payloads do not prove
 native Document/VFS edit notifications or native Swap Sides toolbar dispatch.
 
-No version bump, commit, tag, publication, or sibling-repository change is part of this work.
+No new version bump, tag, publication, or sibling-repository change is part of this work.
+
+### Engine model 2 verification — 2026-09-27
+
+Phase 4 upgrades the registry dependency to exactly 0.2.0. The existing Markdown
+`tbody[data-diff-node]` unit expectation remains unchanged. The refreshed JCEF reports,
+screenshots and package audit above now come from the final registry-backed build on
+IDEA 2024.1/JCEF 122. All Markdown smoke checks pass. See
+[the engine integration report](../engine-integration/README.md) for the full 176-unit,
+73-browser, 36-Kotlin/platform verification and outstanding native interaction gates.
