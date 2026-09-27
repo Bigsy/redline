@@ -6,6 +6,8 @@ All notable changes to Redline are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.2] — 2026-09-27
+
 ### Added
 
 - Show attribute changes with amber outlines, navigation and minimap targets, and safely
@@ -123,7 +125,8 @@ Initial release.
 - Compatible with IntelliJ Platform 2024.1 and newer, including 2026.2+ where JCEF ships as the
   separate bundled *Web Browser (JCEF)* plugin.
 
-[Unreleased]: https://github.com/Bigsy/redline/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/Bigsy/redline/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/Bigsy/redline/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/Bigsy/redline/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/Bigsy/redline/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Bigsy/redline/compare/v0.1.0...v0.2.0
